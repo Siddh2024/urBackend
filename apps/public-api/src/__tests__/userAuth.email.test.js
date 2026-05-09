@@ -392,7 +392,8 @@ describe('Email Authentication Flow', () => {
             expect(authEmailQueue.add).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(429);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                error: expect.stringContaining('45 seconds')
+                success: false,
+                message: expect.stringContaining('45 seconds')
             }));
         });
 

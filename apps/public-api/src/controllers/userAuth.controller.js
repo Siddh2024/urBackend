@@ -964,7 +964,7 @@ module.exports.signup = async (req, res) => {
                 try {
                     await checkPublicOtpCooldown(project._id, normalizedEmail, 'verification');
                 } catch (cooldownErr) {
-                    return res.status(cooldownErr.statusCode || 429).json({ error: cooldownErr.message });
+                    return res.status(cooldownErr.statusCode || 429).json({ success: false, data: {}, message: cooldownErr.message });
                 }
 
                 const otp = crypto.randomInt(100000, 1000000).toString();
@@ -1300,7 +1300,7 @@ module.exports.resendVerificationOtp = async (req, res) => {
         try {
             await checkPublicOtpCooldown(project._id, normalizedEmail, 'verification');
         } catch (cooldownErr) {
-            return res.status(cooldownErr.statusCode || 429).json({ error: cooldownErr.message });
+            return res.status(cooldownErr.statusCode || 429).json({ success: false, data: {}, message: cooldownErr.message });
         }
 
         const otp = crypto.randomInt(100000, 1000000).toString();
@@ -1345,7 +1345,7 @@ module.exports.requestPasswordReset = async (req, res) => {
         try {
             await checkPublicOtpCooldown(project._id, normalizedEmail, 'reset');
         } catch (cooldownErr) {
-            return res.status(cooldownErr.statusCode || 429).json({ error: cooldownErr.message });
+            return res.status(cooldownErr.statusCode || 429).json({ success: false, data: {}, message: cooldownErr.message });
         }
 
         const otp = crypto.randomInt(100000, 1000000).toString();
