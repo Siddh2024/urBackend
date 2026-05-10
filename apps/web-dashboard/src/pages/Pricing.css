@@ -118,6 +118,16 @@
   font-weight: 800;
 }
 
+.pricing-amount-strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 3px;
+}
+
+.pricing-free-trial {
+  color: #00f5d4;
+  font-weight: 600;
+}
+
 .pricing-term {
   color: #9a9a9a;
 }

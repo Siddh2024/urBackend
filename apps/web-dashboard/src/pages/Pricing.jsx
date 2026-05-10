@@ -49,7 +49,6 @@ export default function Pricing() {
       <main className="pricing-main">
         <div className="pricing-hero">
           <h1>Simple pricing for every stage</h1>
-          <p>Black, white, and urBackend green. No distractions, just the plan details.</p>
         </div>
 
         <div className="pricing-grid">
@@ -78,10 +77,10 @@ export default function Pricing() {
             <div className="pricing-badge">Pro (Beta)</div>
             <h2>Pro</h2>
             <div className="pricing-price">
-              <span className="pricing-amount">$0</span>
+              <span className="pricing-amount pricing-amount-strike">$9</span>
               <span className="pricing-term">/mo</span>
             </div>
-            <p className="pricing-subtext">Get a month free to test out the Pro tier during beta.</p>
+            <p className="pricing-subtext pricing-free-trial">Try now free for a month</p>
             <ul className="pricing-list">
               {PRO_FEATURES.map((feature) => (
                 <li key={feature}>
