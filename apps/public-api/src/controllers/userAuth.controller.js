@@ -1337,15 +1337,16 @@ module.exports.requestPasswordReset = async (req, res) => {
         const connection = await getConnection(project._id);
         const Model = getCompiledModel(connection, usersColConfig, project._id, project.resources.db.isExternal);
 
-        const user = await Model.findOne({ email: normalizedEmail });
-        if (!user) {
-            return res.json({ message: "If that email exists, a reset code has been sent." });
-        }
-
         try {
             await checkPublicOtpCooldown(project._id, normalizedEmail, 'reset');
         } catch (cooldownErr) {
             return res.status(cooldownErr.statusCode || 429).json({ success: false, data: {}, message: cooldownErr.message });
+        }
+
+        const user = await Model.findOne({ email: normalizedEmail });
+        if (!user) {
+            await setPublicOtpCooldown(project._id, normalizedEmail, 'reset');
+            return res.json({ message: "If that email exists, a reset code has been sent." });
         }
 
         const otp = crypto.randomInt(100000, 1000000).toString();
