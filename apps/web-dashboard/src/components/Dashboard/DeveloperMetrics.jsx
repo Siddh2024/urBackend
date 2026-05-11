@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { Activity, BarChart2 } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
 
 export default function DeveloperMetrics() {
   const [metrics, setMetrics] = useState(null);
@@ -70,19 +70,19 @@ export default function DeveloperMetrics() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             <div style={{ background: 'var(--color-bg-input)', padding: '0.5rem', borderRadius: '6px' }}>
               <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>API Calls</div>
-              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.apiCalls?.toLocaleString() || 0}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.totalApiCalls?.toLocaleString() || 0}</div>
             </div>
             <div style={{ background: 'var(--color-bg-input)', padding: '0.5rem', borderRadius: '6px' }}>
               <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Mails Sent</div>
-              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.mailSent?.toLocaleString() || 0}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.totalMailSent?.toLocaleString() || 0}</div>
             </div>
             <div style={{ background: 'var(--color-bg-input)', padding: '0.5rem', borderRadius: '6px' }}>
               <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Storage</div>
-              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.storageUploads?.toLocaleString() || 0}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.totalStorageUploads?.toLocaleString() || 0}</div>
             </div>
             <div style={{ background: 'var(--color-bg-input)', padding: '0.5rem', borderRadius: '6px' }}>
               <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Webhooks</div>
-              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.webhooksFired?.toLocaleString() || 0}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600 }}>{engagement.totalWebhooksFired?.toLocaleString() || 0}</div>
             </div>
           </div>
         </div>

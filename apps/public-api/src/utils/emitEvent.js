@@ -1,4 +1,4 @@
-const { PlatformEvent, Project } = require('@urbackend/common');
+const { PlatformEvent } = require('@urbackend/common');
 
 /**
  * emitEvent (public-api variant) — fire-and-forget PlatformEvent writer.

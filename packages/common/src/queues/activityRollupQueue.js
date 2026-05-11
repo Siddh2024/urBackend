@@ -1,6 +1,5 @@
 const { Queue, Worker } = require('bullmq');
 const connection = require('../config/redis');
-const mongoose = require('mongoose');
 
 const QUEUE_NAME = 'activity-rollup-queue';
 
@@ -25,7 +24,7 @@ async function scheduleActivityRollup() {
     'daily-rollup',
     {},
     {
-      repeat: { cron: '5 0 * * *' }, // 00:05 UTC daily
+      repeat: { pattern: '5 0 * * *' }, // 00:05 UTC daily
       removeOnComplete: true,
       removeOnFail: { count: 10 },
     },
@@ -47,13 +46,13 @@ function getYesterdayMidnightUtc() {
  * Run the rollup for a given day (defaults to yesterday UTC).
  *
  * Algorithm:
- *  1. Derive the Log collection (all projects)
+ *  1. Derive the ApiAnalytics collection (all projects)
  *  2. Group logs by projectId → count API calls, mail, storage, webhooks
  *  3. Resolve project owner for each projectId
  *  4. Upsert one DeveloperActivity per developer per day
  */
 async function runRollup(targetDate) {
-  const { Log, Project, DeveloperActivity } = require('../models');
+  const { ApiAnalytics, Project, DeveloperActivity } = require('../models');
 
   const dayStart = targetDate || getYesterdayMidnightUtc();
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -61,17 +60,20 @@ async function runRollup(targetDate) {
   console.log(`[ActivityRollup] Running for ${dayStart.toISOString()}`);
 
   // 1. Aggregate logs by project for the day
-  const logAgg = await Log.aggregate([
+  const logAgg = await ApiAnalytics.aggregate([
     { $match: { timestamp: { $gte: dayStart, $lt: dayEnd } } },
     {
       $group: {
         _id: '$projectId',
         apiCallCount: { $sum: 1 },
         mailCount: {
-          $sum: { $cond: [{ $regexMatch: { input: '$path', regex: /\/api\/mail/ } }, 1, 0] },
+          $sum: { $cond: [{ $regexMatch: { input: '$endpoint', regex: /\/api\/mail/ } }, 1, 0] },
         },
         storageCount: {
-          $sum: { $cond: [{ $regexMatch: { input: '$path', regex: /\/api\/storage/ } }, 1, 0] },
+          $sum: { $cond: [{ $regexMatch: { input: '$endpoint', regex: /\/api\/storage/ } }, 1, 0] },
+        },
+        webhookCount: {
+          $sum: { $cond: [{ $regexMatch: { input: '$endpoint', regex: /\/api\/webhooks?/ } }, 1, 0] },
         },
       },
     },
@@ -114,6 +116,7 @@ async function runRollup(targetDate) {
     devMap[key].apiCallCount += row.apiCallCount;
     devMap[key].mailSentCount += row.mailCount;
     devMap[key].storageUploadsCount += row.storageCount;
+    devMap[key].webhookTriggeredCount += row.webhookCount;
   }
 
   // 4. Upsert one record per developer

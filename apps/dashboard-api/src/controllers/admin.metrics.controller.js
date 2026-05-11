@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-const { Developer, Project, Log, PlatformEvent, DeveloperActivity } = require('@urbackend/common');
+const { Developer, Project, Log, ApiAnalytics, PlatformEvent, DeveloperActivity } = require('@urbackend/common');
 
 /**
  * Guard: only callable by the platform admin.
@@ -34,9 +33,9 @@ module.exports.getOverview = async (req, res) => {
       Developer.countDocuments(),
       Developer.countDocuments({ isVerified: true }),
       Project.countDocuments(),
-      Log.countDocuments(),
-      Log.distinct('projectId', {
-        status: { $gte: 200, $lt: 300 },
+      ApiAnalytics.countDocuments(),
+      ApiAnalytics.distinct('projectId', {
+        statusCode: { $gte: 200, $lt: 300 },
         timestamp: { $gte: sevenDaysAgo },
       }),
     ]);
@@ -76,14 +75,19 @@ module.exports.getActivationFunnel = async (req, res) => {
       { $match: { event: { $in: FUNNEL_STEPS } } },
       {
         $group: {
-          _id: '$event',
-          uniqueDevs: { $addToSet: '$developerId' },
+          _id: { event: '$event', developerId: '$developerId' },
+        },
+      },
+      {
+        $group: {
+          _id: '$_id.event',
+          count: { $sum: 1 },
         },
       },
       {
         $project: {
           event: '$_id',
-          count: { $size: '$uniqueDevs' },
+          count: 1,
           _id: 0,
         },
       },
@@ -127,12 +131,22 @@ module.exports.getCohorts = async (req, res) => {
     const cohortEnd = new Date(Date.UTC(year, mo, 1));
 
     // Developers who signed up in this cohort month
-    const signups = await PlatformEvent.find({
-      event: 'signup_completed',
-      timestamp: { $gte: cohortStart, $lt: cohortEnd },
-    })
-      .select('developerId timestamp')
-      .lean();
+    const signups = await PlatformEvent.aggregate([
+      {
+        $match: {
+          event: 'signup_completed',
+          timestamp: { $gte: cohortStart, $lt: cohortEnd },
+          developerId: { $ne: null },
+        },
+      },
+      { $sort: { timestamp: 1 } },
+      {
+        $group: {
+          _id: '$developerId',
+          signupTimestamp: { $first: '$timestamp' },
+        },
+      },
+    ]);
 
     const cohortSize = signups.length;
     if (cohortSize === 0) {
@@ -143,33 +157,58 @@ module.exports.getCohorts = async (req, res) => {
       });
     }
 
-    // For each developer, check if active on D+1, D+7, D+30
-    const checkDayRetention = async (daysAfter) => {
-      let retained = 0;
-      await Promise.all(
-        signups.map(async (s) => {
-          const base = new Date(s.timestamp);
-          base.setUTCHours(0, 0, 0, 0);
-          const target = new Date(base);
-          target.setUTCDate(target.getUTCDate() + daysAfter);
-          const next = new Date(target);
-          next.setUTCDate(next.getUTCDate() + 1);
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const toUtcDay = (date) => {
+      const d = new Date(date);
+      d.setUTCHours(0, 0, 0, 0);
+      return d;
+    };
+    const toUtcDayKey = (date) => toUtcDay(date).toISOString();
 
-          const exists = await DeveloperActivity.findOne({
-            developerId: s.developerId,
-            date: { $gte: target, $lt: next },
-          }).lean();
-          if (exists) retained++;
-        }),
-      );
+    const targetOffsets = [1, 7, 30];
+    const targetKeySets = {
+      1: new Set(),
+      7: new Set(),
+      30: new Set(),
+    };
+
+    let minTarget = null;
+    let maxTarget = null;
+
+    for (const signup of signups) {
+      const developerKey = signup._id.toString();
+      const signupDay = toUtcDay(signup.signupTimestamp);
+      for (const offset of targetOffsets) {
+        const target = new Date(signupDay.getTime() + offset * DAY_MS);
+        const targetKey = `${developerKey}:${toUtcDayKey(target)}`;
+        targetKeySets[offset].add(targetKey);
+        if (!minTarget || target < minTarget) minTarget = target;
+        if (!maxTarget || target > maxTarget) maxTarget = target;
+      }
+    }
+
+    const activities = await DeveloperActivity.find({
+      developerId: { $in: signups.map((s) => s._id) },
+      date: { $gte: minTarget, $lt: new Date(maxTarget.getTime() + DAY_MS) },
+    })
+      .select('developerId date')
+      .lean();
+
+    const activeKeySet = new Set(
+      activities.map((activity) => `${activity.developerId.toString()}:${toUtcDayKey(activity.date)}`),
+    );
+
+    const countRetained = (offset) => {
+      let retained = 0;
+      for (const key of targetKeySets[offset]) {
+        if (activeKeySet.has(key)) retained++;
+      }
       return retained;
     };
 
-    const [d1, d7, d30] = await Promise.all([
-      checkDayRetention(1),
-      checkDayRetention(7),
-      checkDayRetention(30),
-    ]);
+    const d1 = countRetained(1);
+    const d7 = countRetained(7);
+    const d30 = countRetained(30);
 
     return res.json({
       success: true,

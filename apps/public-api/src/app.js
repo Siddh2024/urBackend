@@ -26,22 +26,6 @@ const {initAuthEmailWorker, initPublicEmailWorker} = require('@urbackend/common'
 const {initActivityRollupWorker, scheduleActivityRollup} = require('@urbackend/common');
 const {initReliabilityAlertWorker, scheduleReliabilityAlert} = require('@urbackend/common');
 
-// Initialize webhook worker
-if (process.env.NODE_ENV !== 'test') {
-    initWebhookWorker();
-    initAuthEmailWorker();
-    initPublicEmailWorker();
-    initActivityRollupWorker();
-    scheduleActivityRollup().catch((err) =>
-        console.error('[ActivityRollup] Failed to schedule cron:', err.message)
-    );
-    initReliabilityAlertWorker();
-    scheduleReliabilityAlert().catch((err) =>
-        console.error('[ReliabilityAlert] Failed to schedule cron:', err.message)
-    );
-}
-
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(standardizeApiResponse);
@@ -140,38 +124,59 @@ if (process.env.NODE_ENV !== 'test') {
 
     const { connectDB } = require('@urbackend/common');
 
-    // Start DB & Server
-    connectDB();
-
-    const server = app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-
-    // SHUTDOWN
-    const gracefulShutdown = async () => {
-        console.log('🛑 SIGTERM/SIGINT received. Shutting down gracefully...');
-
-        server.close(async () => {
-            console.log('✅ HTTP server closed.');
-            try {
-                await mongoose.connection.close(false);
-                console.log('✅ MongoDB connection closed.');
-                process.exit(0);
-            } catch (err) {
-                console.error('❌ Error closing MongoDB connection:', err);
-                process.exit(1);
-            }
-        });
-
-        // Force close after 10s
-        setTimeout(() => {
-            console.error('Force shutting down...');
-            process.exit(1);
-        }, 10000);
+    const startWorkers = () => {
+        initWebhookWorker();
+        initAuthEmailWorker();
+        initPublicEmailWorker();
+        initActivityRollupWorker();
+        scheduleActivityRollup().catch((err) =>
+            console.error('[ActivityRollup] Failed to schedule cron:', err.message)
+        );
+        initReliabilityAlertWorker();
+        scheduleReliabilityAlert().catch((err) =>
+            console.error('[ReliabilityAlert] Failed to schedule cron:', err.message)
+        );
     };
 
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
+    const bootstrap = async () => {
+        await connectDB();
+        startWorkers();
+
+        const server = app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+
+        // SHUTDOWN
+        const gracefulShutdown = async () => {
+            console.log('🛑 SIGTERM/SIGINT received. Shutting down gracefully...');
+
+            server.close(async () => {
+                console.log('✅ HTTP server closed.');
+                try {
+                    await mongoose.connection.close(false);
+                    console.log('✅ MongoDB connection closed.');
+                    process.exit(0);
+                } catch (err) {
+                    console.error('❌ Error closing MongoDB connection:', err);
+                    process.exit(1);
+                }
+            });
+
+            // Force close after 10s
+            setTimeout(() => {
+                console.error('Force shutting down...');
+                process.exit(1);
+            }, 10000);
+        };
+
+        process.on('SIGTERM', gracefulShutdown);
+        process.on('SIGINT', gracefulShutdown);
+    };
+
+    bootstrap().catch((err) => {
+        console.error('❌ Failed to bootstrap public-api:', err);
+        process.exit(1);
+    });
 }
 
 // Export for Testing

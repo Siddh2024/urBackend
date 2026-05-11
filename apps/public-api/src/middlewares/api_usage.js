@@ -1,6 +1,7 @@
 const rateLimit = require('express-rate-limit');
 const { Log, redis, ApiAnalytics } = require('@urbackend/common');
 const { getDayKey, DEFAULT_DAILY_TTL_SECONDS, incrWithTtlAtomic } = require('../utils/usageCounter');
+const FIRST_API_SUCCESS_FLAG_TTL_SECONDS = 2 * 365 * 24 * 60 * 60;
 
 // Rate Limiter 
 const limiter = rateLimit({
@@ -20,11 +21,13 @@ const logger = (req, res, next) => {
     // Capture start time for response time measurement
     const startHr = process.hrtime();
     
-    // Check for Data, Storage, AND UserAuth routes
+    // Check for routes included in platform analytics
     if (
         req.originalUrl.startsWith('/api/data') ||
         req.originalUrl.startsWith('/api/storage') ||
-        req.originalUrl.startsWith('/api/userAuth')
+        req.originalUrl.startsWith('/api/userAuth') ||
+        req.originalUrl.startsWith('/api/mail') ||
+        req.originalUrl.startsWith('/api/schemas')
     ) {
         res.on('finish', async () => {
             // --- Existing logging and usage counter ---
@@ -60,7 +63,7 @@ const logger = (req, res, next) => {
                     try {
                         await ApiAnalytics.create({
                             projectId: req.project._id,
-                            endpoint: req.route?.path || req.originalUrl,
+                            endpoint: req.originalUrl,
                             method: req.method,
                             statusCode: res.statusCode,
                             responseTimeMs: parseFloat(responseTimeMs),
@@ -78,7 +81,13 @@ const logger = (req, res, next) => {
                 setImmediate(async () => {
                     try {
                         const flagKey = `project:activation:first_api_success:${req.project._id}`;
-                        const isFirst = await redis.set(flagKey, '1', 'NX');
+                        const isFirst = await redis.set(
+                            flagKey,
+                            '1',
+                            'EX',
+                            FIRST_API_SUCCESS_FLAG_TTL_SECONDS,
+                            'NX'
+                        );
                         if (isFirst) {
                             const { Project, PlatformEvent } = require('@urbackend/common');
                             const proj = await Project.findById(req.project._id).select('owner').lean();

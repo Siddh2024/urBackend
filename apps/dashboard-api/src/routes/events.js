@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { track } = require('../controllers/events.controller');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 // Middleware: dashboard JWT auth
 const { verifyEmail } = require('@urbackend/common');
@@ -10,6 +11,6 @@ const { verifyEmail } = require('@urbackend/common');
  * Receives frontend analytics events (onboarding steps, key copy, etc.)
  * Requires a valid dashboard session.
  */
-router.post('/track', verifyEmail, track);
+router.post('/track', authMiddleware, verifyEmail, track);
 
 module.exports = router;
