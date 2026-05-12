@@ -247,26 +247,20 @@ const bestEffortDeleteUploadedObject = async (project, filePath) => {
 };
 
 module.exports.createProject = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    // POST FOR - PROJECT CREATION
+  const executeOperation = async (session) => {
     const { name, description, siteUrl } = createProjectSchema.parse(req.body);
 
-    // Atomic limit enforcement: count and create within transaction
     if (req.projectLimit !== undefined) {
+      const queryOpts = session ? { session } : {};
       const currentCount = await Project.countDocuments(
         { owner: req.user._id },
-        { session },
+        queryOpts,
       );
 
       if (currentCount >= req.projectLimit) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(403).json({
-          error: `Project limit reached (${req.projectLimit}). Please upgrade your plan to create more projects.`
-        });
+        const error = new Error(`Project limit reached (${req.projectLimit}). Please upgrade your plan to create more projects.`);
+        error.status = 403;
+        throw error;
       }
     }
 
@@ -287,10 +281,9 @@ module.exports.createProject = async (req, res) => {
       jwtSecret: rawJwtSecret,
       siteUrl: siteUrl || "",
     });
-    await newProject.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    
+    const saveOpts = session ? { session } : {};
+    await newProject.save(saveOpts);
 
     const projectObj = newProject.toObject();
     projectObj.publishableKey = rawPublishableKey;
@@ -298,19 +291,40 @@ module.exports.createProject = async (req, res) => {
     delete projectObj.jwtSecret;
     projectObj.authProviders = sanitizeAuthProviders(projectObj.authProviders);
 
-    // Activation funnel — project created
-    emitEvent(req.user._id, 'project_created', { projectName: name }, newProject._id);
+    return { projectObj, newProject };
+  };
 
-    res.status(201).json(projectObj);
-  } catch (err) {
-    await session.abortTransaction();
+  let session = null;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+    
+    const { projectObj, newProject } = await executeOperation(session);
+    
+    await session.commitTransaction();
     session.endSession();
-
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ error: err.issues });
+    
+    emitEvent(req.user._id, 'project_created', { projectName: projectObj.name }, newProject._id);
+    return res.status(201).json(projectObj);
+  } catch (err) {
+    if (session) {
+      try { await session.abortTransaction(); } catch (e) {}
+      session.endSession();
+    }
+    
+    if (err.message && err.message.includes("Transaction numbers are only allowed")) {
+      try {
+        const { projectObj, newProject } = await executeOperation(null);
+        emitEvent(req.user._id, 'project_created', { projectName: projectObj.name }, newProject._id);
+        return res.status(201).json(projectObj);
+      } catch (retryErr) {
+        if (retryErr instanceof z.ZodError) return res.status(400).json({ error: retryErr.issues });
+        return res.status(retryErr.status || 500).json({ error: retryErr.message });
+      }
     }
 
-    res.status(500).json({ error: err.message });
+    if (err instanceof z.ZodError) return res.status(400).json({ error: err.issues });
+    return res.status(err.status || 500).json({ error: err.message });
   }
 };
 
@@ -627,47 +641,34 @@ module.exports.deleteExternalStorageConfig = async (req, res) => {
 
 // POST REQ FOR CREATE COLLECTION
 module.exports.createCollection = async (req, res) => {
-  let project;
-  let connection;
-  let compiledCollectionName;
-  let collectionWasPersisted = false;
-  let collectionNameForRollback;
-  let collectionExistedBefore = false;
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const executeOperation = async (session) => {
+    const { projectId, collectionName, schema } = createCollectionSchema.parse(req.body);
 
-  try {
-    const { projectId, collectionName, schema } = createCollectionSchema.parse(
-      req.body,
-    );
-
-    collectionNameForRollback = collectionName;
-
-    project = await Project.findOne({
+    const projectQuery = Project.findOne({
       _id: projectId,
       owner: req.user._id,
-    }).session(session);
+    });
+    if (session) projectQuery.session(session);
+    
+    const project = await projectQuery;
     if (!project) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(404).json({ error: "Project not found" });
+      const error = new Error("Project not found");
+      error.status = 404;
+      throw error;
     }
 
     const exists = project.collections.find((c) => c.name === collectionName);
     if (exists) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ error: "Collection already exists" });
+      const error = new Error("Collection already exists");
+      error.status = 400;
+      throw error;
     }
 
-    // Atomic limit enforcement within transaction
     if (req.collectionLimit !== undefined) {
       if (project.collections.length >= req.collectionLimit) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(403).json({
-          error: `Collection limit reached (${req.collectionLimit}). Please upgrade your plan to create more collections.`
-        });
+        const error = new Error(`Collection limit reached (${req.collectionLimit}). Please upgrade your plan to create more collections.`);
+        error.status = 403;
+        throw error;
       }
     }
 
@@ -677,16 +678,13 @@ module.exports.createCollection = async (req, res) => {
 
     if (collectionName === "users") {
       if (!validateUsersSchema(schema)) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(422).json({
-          error:
-            "The 'users' collection must have required 'email' and 'password' string fields.",
-        });
+        const error = new Error("The 'users' collection must have required 'email' and 'password' string fields.");
+        error.status = 422;
+        throw error;
       }
     }
 
-    compiledCollectionName = project.resources.db.isExternal
+    const compiledCollectionName = project.resources.db.isExternal
       ? collectionName
       : `${project._id}_${collectionName}`;
 
@@ -697,12 +695,13 @@ module.exports.createCollection = async (req, res) => {
     };
 
     project.collections.push(newCollectionConfig);
-    await project.save({ session });
-    collectionWasPersisted = true;
+    
+    const saveOpts = session ? { session } : {};
+    await project.save(saveOpts);
 
-    connection = await getConnection(projectId);
+    const connection = await getConnection(projectId);
 
-    collectionExistedBefore = await connection.db
+    const collectionExistedBefore = await connection.db
       .listCollections({ name: compiledCollectionName }, { nameOnly: true })
       .hasNext();
 
@@ -714,6 +713,16 @@ module.exports.createCollection = async (req, res) => {
     );
 
     await createUniqueIndexes(Model, newCollectionConfig.model);
+
+    return { project, connection, compiledCollectionName, collectionExistedBefore, projectId, collectionName };
+  };
+
+  let session = null;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+    
+    const { project, projectId, collectionName } = await executeOperation(session);
 
     await session.commitTransaction();
     session.endSession();
@@ -728,35 +737,39 @@ module.exports.createCollection = async (req, res) => {
     delete projectObj.secretKey;
     delete projectObj.jwtSecret;
 
-    // Activation funnel — collection created
-    emitEvent(
-      req.user._id,
-      'collection_created',
-      { collectionName, isUsersCollection: collectionName === 'users' },
-      projectId,
-    );
+    emitEvent(req.user._id, 'collection_created', { collectionName, isUsersCollection: collectionName === 'users' }, projectId);
 
     return res.status(201).json(projectObj);
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    try {
-      if (connection && compiledCollectionName) {
-        clearCompiledModel(connection, compiledCollectionName);
+    if (session) {
+      try { await session.abortTransaction(); } catch (e) {}
+      session.endSession();
+    }
 
-        if (!collectionExistedBefore) {
-          await dropCollectionIfExists(connection, compiledCollectionName);
-        }
+    if (err.message && err.message.includes("Transaction numbers are only allowed")) {
+      try {
+        const { project, projectId, collectionName } = await executeOperation(null);
+        await deleteProjectById(projectId);
+        await setProjectById(projectId, project.toObject());
+        await deleteProjectByApiKeyCache(project.publishableKey);
+        await deleteProjectByApiKeyCache(project.secretKey);
+
+        const projectObj = project.toObject();
+        delete projectObj.publishableKey;
+        delete projectObj.secretKey;
+        delete projectObj.jwtSecret;
+
+        emitEvent(req.user._id, 'collection_created', { collectionName, isUsersCollection: collectionName === 'users' }, projectId);
+
+        return res.status(201).json(projectObj);
+      } catch (retryErr) {
+        if (retryErr instanceof z.ZodError) return res.status(400).json({ error: retryErr.issues });
+        return res.status(retryErr.status || 400).json({ error: retryErr.message });
       }
-    } catch (rollbackErr) {
-      console.error("Create collection rollback failed:", rollbackErr);
     }
 
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ error: err.issues });
-    }
-
-    return res.status(400).json({ error: err.message });
+    if (err instanceof z.ZodError) return res.status(400).json({ error: err.issues });
+    return res.status(err.status || 400).json({ error: err.message });
   }
 };
 

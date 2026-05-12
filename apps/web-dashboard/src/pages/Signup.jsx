@@ -106,7 +106,7 @@ function Signup() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <button
           type="button"
-          className="btn btn-secondary auth-submit"
+          className="btn btn-primary auth-submit"
           onClick={handleGithubSignIn}
           disabled={isSubmitting}
         >
@@ -137,7 +137,7 @@ function Signup() {
         </div>
 
         <div className="auth-field">
-          <label htmlFor="signup-email">Work email</label>
+          <label htmlFor="signup-email">Email address</label>
           <div className="auth-input-wrap">
             <Mail size={18} />
             <input
@@ -145,7 +145,7 @@ function Signup() {
               type="email"
               name="email"
               className="input-field auth-input"
-              placeholder="name@company.com"
+              placeholder="name@example.com"
               value={formData.email}
               onChange={handleChange}
               autoComplete="email"
@@ -193,7 +193,7 @@ function Signup() {
           ))}
         </div>
 
-        <button type="submit" className="btn btn-primary auth-submit" disabled={isSubmitting}>
+        <button type="submit" className="btn btn-secondary auth-submit" disabled={isSubmitting}>
           {isSubmitting ? 'Creating account...' : 'Create account'}
         </button>
       </form>

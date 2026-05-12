@@ -205,9 +205,39 @@ export default function Database() {
                 {loadingData ? (
                   <div style={{ padding: '2rem', textAlign: 'center' }} className="spinner"></div>
                 ) : data.length === 0 ? (
-                  <div className="empty-state" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                    <FileText size={48} />
-                    <p style={{ marginTop: '1rem' }}>No records found</p>
+                  <div className="empty-state" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ padding: '2.5rem', background: 'rgba(0,0,0,0.1)', border: '1px dashed var(--color-border)', borderRadius: '12px', textAlign: 'center', maxWidth: '600px', width: '100%' }}>
+                        <FileText size={40} style={{ opacity: 0.4, marginBottom: '1rem', display: 'inline-block' }} />
+                        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', fontWeight: 600 }}>No records found</h3>
+                        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                            Your collection is empty. You can add a record manually or make your first API call!
+                        </p>
+                        
+                        <div style={{ background: '#111', padding: '1rem', borderRadius: '8px', textAlign: 'left', border: '1px solid var(--color-border)', position: 'relative' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                                <span>Example POST Request</span>
+                                <button 
+                                    onClick={() => { 
+                                        const snippet = `curl -X POST https://api.urbackend.com/api/data/${activeCollection.name} \\\n  -H "x-api-key: <YOUR_PUBLISHABLE_KEY>" \\\n  -H "Content-Type: application/json" \\\n  -d '{}'`;
+                                        navigator.clipboard.writeText(snippet); 
+                                        toast.success('Snippet copied!'); 
+                                    }} 
+                                    style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer' }}
+                                >
+                                    Copy
+                                </button>
+                            </div>
+                            <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
+<span style={{ color: '#f59e0b' }}>curl</span> -X POST https://api.urbackend.com/api/data/{activeCollection.name} \
+  -H <span style={{ color: '#10b981' }}>"x-api-key: &lt;YOUR_PUBLISHABLE_KEY&gt;"</span> \
+  -H <span style={{ color: '#10b981' }}>"Content-Type: application/json"</span> \
+  -d <span style={{ color: '#10b981' }}>'&#123;&#125;'</span>
+                            </pre>
+                        </div>
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>Add Record Manually</button>
+                        </div>
+                    </div>
                   </div>
                 ) : viewMode === "list" ? (
                   <RecordList data={data} activeCollection={activeCollection} onView={setSelectedRecord} />
@@ -230,8 +260,15 @@ export default function Database() {
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
-            <DbIcon size={64} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-card)', padding: '2rem' }}>
+            <DbIcon size={64} style={{ opacity: 0.2, marginBottom: '1.5rem' }} color="var(--color-primary)" />
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '0.5rem' }}>No collections found</h3>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginBottom: '2rem', maxWidth: '400px', textAlign: 'center', lineHeight: '1.5' }}>
+              Collections (or Tables) are where your project's data is stored. Create your first collection to start saving data.
+            </p>
+            <button className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1rem' }} onClick={() => navigate(`/project/${projectId}/create-collection`)}>
+              Create Collection
+            </button>
           </div>
         )}
       </main>

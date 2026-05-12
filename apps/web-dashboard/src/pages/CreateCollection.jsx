@@ -559,7 +559,7 @@ function CreateCollection() {
             </button>
 
             <div className="card">
-                <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 600 }}>Create New Table</h2>
+                <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 600 }}>Create Collection</h2>
 
                 <div className="form-group">
                     <label className="form-label">Name</label>
@@ -583,14 +583,14 @@ function CreateCollection() {
 
                 <div style={{ marginTop: '2.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Columns</h3>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Fields</h3>
                         <button
                             type="button"
                             onClick={addField}
                             className="btn btn-secondary"
                             style={{ fontSize: '0.85rem' }}
                         >
-                            <Plus size={14} /> Add Column
+                            <Plus size={14} /> Add Field
                         </button>
                     </div>
 
