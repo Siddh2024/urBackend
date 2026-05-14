@@ -99,7 +99,7 @@ describe('mail.controller', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         process.env.RESEND_API_KEY = 'default-key';
-        process.env.RESEND_API_KEY_2 = '';
+        delete process.env.RESEND_API_KEY_2;
         process.env.EMAIL_FROM = 'mail@urbackend.app';
         process.env.RESEND_WEBHOOK_SECRET = 'whsec_test';
         redis.decr.mockResolvedValue(0);
