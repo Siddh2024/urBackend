@@ -2481,6 +2481,10 @@ module.exports.manageAudiences = async (req, res) => {
 module.exports.deleteAudience = async (req, res) => {
     try {
         const { projectId, audienceId } = req.params;
+        if (!/^[A-Za-z0-9_-]+$/.test(audienceId)) {
+            return res.status(400).json({ success: false, message: "Invalid audienceId format" });
+        }
+        const safeAudienceId = encodeURIComponent(audienceId);
         const project = await Project.findOne({ _id: projectId, owner: req.user._id }).select("+resendApiKey.encrypted +resendApiKey.iv +resendApiKey.tag");
         if (!project) return res.status(404).json({ success: false, message: "Project not found" });
 
@@ -2489,7 +2493,7 @@ module.exports.deleteAudience = async (req, res) => {
             return res.status(403).json({ success: false, message: "Audiences require a custom Resend API Key (BYOK)." });
         }
 
-        await axios.delete(`https://api.resend.com/audiences/${audienceId}`, {
+        await axios.delete(`https://api.resend.com/audiences/${safeAudienceId}`, {
             headers: { Authorization: `Bearer ${key}` }
         });
 
@@ -2503,6 +2507,10 @@ module.exports.deleteAudience = async (req, res) => {
 module.exports.manageContacts = async (req, res) => {
     try {
         const { projectId, audienceId } = req.params;
+        if (!/^[A-Za-z0-9_-]+$/.test(audienceId)) {
+            return res.status(400).json({ success: false, message: "Invalid audienceId format" });
+        }
+        const safeAudienceId = encodeURIComponent(audienceId);
         const project = await Project.findOne({ _id: projectId, owner: req.user._id }).select("+resendApiKey.encrypted +resendApiKey.iv +resendApiKey.tag");
         if (!project) return res.status(404).json({ success: false, message: "Project not found" });
 
@@ -2512,7 +2520,7 @@ module.exports.manageContacts = async (req, res) => {
         }
 
         if (req.method === "GET") {
-            const response = await axios.get(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+            const response = await axios.get(`https://api.resend.com/audiences/${safeAudienceId}/contacts`, {
                 headers: { Authorization: `Bearer ${key}` }
             });
             return res.json({ success: true, data: response.data });
@@ -2523,7 +2531,7 @@ module.exports.manageContacts = async (req, res) => {
             if (!email) return res.status(400).json({ success: false, message: "Contact email required" });
 
             const payload = { email, first_name: firstName, last_name: lastName, unsubscribed };
-            const response = await axios.post(`https://api.resend.com/audiences/${audienceId}/contacts`, payload, {
+            const response = await axios.post(`https://api.resend.com/audiences/${safeAudienceId}/contacts`, payload, {
                 headers: { Authorization: `Bearer ${key}` }
             });
             return res.json({ success: true, data: response.data });
