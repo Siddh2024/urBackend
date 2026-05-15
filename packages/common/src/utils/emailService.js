@@ -6,23 +6,21 @@ const dotenv = require('dotenv');
 dotenv.config();
 const resend = new Resend(process.env.RESEND_API_KEY_2 || process.env.RESEND_API_KEY || 're_dummy_key_for_testing');
 
-const formatFromAddress = (value) => {
-    if (!value) {
-        return 'urBackend <urbackend@apps.bitbros.in>';
+const FALLBACK_FROM_ADDRESS = 'urBackend <urbackend@apps.bitbros.in>';
+
+const formatFromAddress = (email_address) => {
+    const trimmed = email_address?.trim();
+    if (!trimmed) {
+        return FALLBACK_FROM_ADDRESS;
     }
 
-    const trimmed = value.trim();
-    const angleMatch = trimmed.match(/^(.*)<(.+)>$/);
-    if (angleMatch) {
-        const email = angleMatch[2].trim();
-        return `urBackend <${email}>`;
-    }
+    // simplified the sender formatting logic and removed the regex based parsing to avoid the CodeQL warning
 
     return `urBackend <${trimmed}>`;
 };
-
+ 
 const defaultFromAddress = formatFromAddress(process.env.EMAIL_FROM);
-const replyToAddress = process.env.EMAIL_REPLY_TO || "urbackend@apps.bitbros.in";
+const replyToAddress = process.env.EMAIL_REPLY_TO?.trim() || "urbackend@apps.bitbros.in";
 
 async function sendOtp(email, otp, { subject = "Verify your urBackend account", customContent = null } = {}) {
     try {
