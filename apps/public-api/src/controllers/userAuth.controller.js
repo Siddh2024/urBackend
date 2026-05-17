@@ -1060,7 +1060,8 @@ module.exports.login = async (req, res, next) => {
         if (typeof next === 'function') {
             return next(new AppError(statusCode, message));
         }
-        return res.status(statusCode).json({ error: message });
+        // Fallback for direct responses: use the project's standard API envelope
+        return res.status(statusCode).json({ success: false, data: {}, message });
     };
 
     const sendLockoutServiceError = (message = 'Login lockout service unavailable') => sendAuthError(503, message);
