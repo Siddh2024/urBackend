@@ -7,7 +7,8 @@ description: "Comprehensive developer guide for urBackend Mail Platform: BYOK, b
 
 urBackend Mail Platform extends transactional sending into a full delivery workflow with:
 
-- async queue-backed sending (`/api/mail/send`, `/api/mail/send-batch`)
+- async queue-backed single sending (`/api/mail/send`)
+- direct provider batch sending (`/api/mail/send-batch`)
 - BYOK (Bring Your Own Key) with encrypted project-level Resend keys
 - delivery tracking via persistent `MailLog`
 - audience/contact management (BYOK-gated)
@@ -29,10 +30,12 @@ Implementation references:
 
 ```mermaid
 flowchart LR
-  A[Client request\n/api/mail/send or /api/mail/send-batch] --> B[Public API]
+  A1[Client request\n/api/mail/send] --> B[Public API]
+  A2[Client request\n/api/mail/send-batch] --> B
   B --> C[Quota reservation + BYOK/default provider resolve]
-  C --> D[BullMQ mail queue]
+  C --> D[BullMQ mail queue (single-send path)]
   D --> E[Resend API]
+  C --> E
   E --> F[Delivery events webhook]
   F --> G[POST /api/mail/webhook\nSvix verify]
   G --> H[(MailLog)]
@@ -81,10 +84,10 @@ In Resend dashboard, configure webhook URL:
 
 Enable relevant events at minimum:
 
+- `email.sent`
 - `email.delivered`
 - `email.bounced`
 - `email.complained`
-- `email.failed`
 
 ## Sending emails
 
@@ -215,7 +218,7 @@ console.log(result);
 
 ## Mail logs
 
-### GET `/api/mail/logs` (public) and GET `/:projectId/mail/logs` (dashboard)
+### GET `/api/mail/logs` (public) and GET `/api/projects/:projectId/mail/logs` (dashboard)
 
 #### `MailLog` fields
 
@@ -486,10 +489,10 @@ Set `RESEND_WEBHOOK_SECRET` in server env. Webhook signature verification and ev
 
 | Resend event type | MailLog status |
 |---|---|
+| `email.sent` | `sent` |
 | `email.delivered` | `delivered` |
 | `email.bounced` | `bounced` |
 | `email.complained` | `complained` |
-| `email.failed` | `failed` |
 | `email.delivery_delayed` | `queued` |
 
 ### Retry behavior
@@ -579,13 +582,22 @@ Add product screenshots/annotated walkthrough images in this section if your doc
 | `POST /api/mail/webhook` | `400` | Webhook signature verification failed |
 | Provider-proxied endpoints | passthrough | Upstream Resend status/message are surfaced |
 
-All responses follow urBackend envelope shape:
+Most endpoints follow urBackend envelope shape:
 
 ```json
 {
   "success": false,
   "data": {},
   "message": "Human-readable error"
+}
+```
+
+Webhook signature failures currently return:
+
+```json
+{
+  "success": false,
+  "message": "Webhook signature verification failed."
 }
 ```
 
