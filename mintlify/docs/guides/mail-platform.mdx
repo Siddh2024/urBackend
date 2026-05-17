@@ -478,9 +478,9 @@ Svix signatures are computed over raw payload bytes. `express.raw({ type: 'appli
 
 ### Secret configuration
 
-Set `RESEND_WEBHOOK_SECRET` in server env. Without a valid secret, your deployment should fail closed for webhook processing.
+Set `RESEND_WEBHOOK_SECRET` in server env. Webhook signature verification and event processing only occur when this secret is configured correctly.
 
-- Fail-closed expectation: return HTTP `500` when secret is missing/misconfigured.
+- Current behavior when missing/misconfigured: the handler returns HTTP `200` with `{"success":true,"message":"Webhook ignored: secret not configured."}` and skips verification/processing.
 
 ### Event mapping to `MailLog.status`
 
