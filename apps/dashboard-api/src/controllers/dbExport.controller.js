@@ -2,6 +2,7 @@ const { AppError } = require('@urbackend/common');
 const { Developer } = require('@urbackend/common');
 const { Project } = require('@urbackend/common');
 const { exportQueue } = require('@urbackend/common');
+const { redis } = require('@urbackend/common');
 
 module.exports.dbExportHandler = async (req, res, next) => {
     try {
@@ -26,10 +27,25 @@ module.exports.dbExportHandler = async (req, res, next) => {
 
         console.log(`[Dashboard API] Received export request for project ${projectId} from user ${userId} (${email})`);
 
+
+        const maxExports = plan === 'pro' ? 5 : 1;
+        const today = new Date().toISOString().split('T')[0];
+        const key = `project:${projectId}:export_limit:${today}`;
+
+        const currentCount = await redis.get(key);
+        if (currentCount && Number(currentCount) >= maxExports) {
+            return next(new AppError(429, `Daily export limit reached (${maxExports}/${maxExports}). Please try again tomorrow.`));
+        }
+
+        const newCount = await redis.incr(key);
+        if (newCount === 1) {
+            await redis.expire(key, 86400); // Set expiry to 24 hours
+        }
+
         await exportQueue.add('export-database', { projectId, userId, email });
 
         return res.status(202).json({
-            message: `Database export request received. You will receive an email with a download link shortly.`,
+            message: `Database export request received. You will receive an email with a download link shortly. Usage today: ${newCount}/${maxExports}.`,
         });
 
     } catch (err) {
