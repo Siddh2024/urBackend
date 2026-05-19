@@ -18,9 +18,6 @@ jobs:
       pull-requests: read  # Required to read pull request labels
     runs-on: ubuntu-latest
     steps:
-      # Drafts your next release notes based on pull request metadata
       - uses: release-drafter/release-drafter@v6
-        with:
-          config-name: release-drafter.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

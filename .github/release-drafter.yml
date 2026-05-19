@@ -1,49 +1,46 @@
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
 
-# Automatically determines the next version (semver) based on PR labels
 version-resolver:
   major:
     labels:
-      - 'major'
-      - 'breaking'
+      - "major"
   minor:
     labels:
-      - 'feat'
-      - 'feature'
-      - 'minor'
+      - "minor"
+      - "feat"
+      - "feature"
   patch:
     labels:
-      - 'fix'
-      - 'bug'
-      - 'patch'
-  default: patch
+      - "patch"
+      - "fix"
+      - "bug"
+  default: "patch"
 
-# Categories matching the Keep a Changelog format we just added
 categories:
-  - title: '🚀 Added'
+  - title: "🚀 Added"
     labels:
-      - 'feat'
-      - 'feature'
-      - 'enhancement'
-  - title: '🔄 Changed'
+      - "feat"
+      - "feature"
+      - "enhancement"
+  - title: "🔄 Changed"
     labels:
-      - 'refactor'
-      - 'performance'
-      - 'change'
-  - title: '🐛 Fixed'
+      - "refactor"
+      - "performance"
+      - "change"
+  - title: "🐛 Fixed"
     labels:
-      - 'fix'
-      - 'bug'
-  - title: '📝 Documentation'
+      - "fix"
+      - "bug"
+  - title: "📝 Documentation"
     labels:
-      - 'docs'
-      - 'documentation'
-  - title: '🔒 Security'
+      - "docs"
+      - "documentation"
+  - title: "🔒 Security"
     labels:
-      - 'security'
+      - "security"
 
-change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 
 template: |
   ## What's Changed
