@@ -1,6 +1,6 @@
 const { Queue, Worker } = require('bullmq');
 const connection = require('../config/redis');
-const { sendReleaseEmail } = require('../utils/emailService');
+const { sendReleaseEmail, sendExportReadyEmail } = require('../utils/emailService');
 
 // Create the email queue
 const emailQueue = new Queue('email-queue', { connection });
@@ -24,24 +24,7 @@ const worker = new Worker('email-queue', async (job) => {
 
             console.log(`[EmailWorker] Sending simple export email to ${email} for ${projectName}`);
 
-            const subject = `Export Ready: ${projectName}`;
-            
-            const textBody = `Hello,
-
-            Your requested database export for the project "${projectName}" is ready.
-
-            You can download your JSON export using the following secure link (valid for 24 hours):
-            ${downloadUrl}
-
-            Thanks,
-            urBackend Team`;
-
-            await emailTransporter.sendMail({
-                from: '"urBackend" <noreply@urbackend.bitbros.in>',
-                to: email,
-                subject: subject,
-                text: textBody
-            });
+            await sendExportReadyEmail({ to:email, downloadUrl, projectName});
             
             console.log(`[EmailWorker] Export email successfully sent to ${email}`);
         }

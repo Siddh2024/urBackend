@@ -32,6 +32,7 @@ const MailLog = require("./models/MailLog");
 const { authEmailQueue, initAuthEmailWorker } = require("./queues/authEmailQueue");
 const { publicEmailQueue, initPublicEmailWorker } = require("./queues/publicEmailQueue");
 const { emailQueue } = require("./queues/emailQueue");
+const { exportQueue } = require("./queues/exportQueue");
 const {
   webhookQueue,
   enqueueWebhookDelivery,
@@ -130,6 +131,7 @@ module.exports = {
   WebhookDelivery,
   ProRequest,
   authEmailQueue,
+  exportQueue,
   emailQueue,
   webhookQueue,
   enqueueWebhookDelivery,
