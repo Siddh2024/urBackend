@@ -12,15 +12,14 @@ const trashCleanupQueue = new Queue(QUEUE_NAME, { connection });
  */
 async function enqueueCollectionCleanup(projectId, collectionName, delay = 0) {
   try {
-    const baseJobId = `${encodeURIComponent(projectId)}-${encodeURIComponent(collectionName)}`;
-    const jobId = delay > 0 ? `${baseJobId}-${Date.now()}` : baseJobId;
+    const jobId = `${projectId}:${collectionName}`;
     
-    // Only remove non-active jobs to avoid BullMQ state errors
-    const oldJob = await trashCleanupQueue.getJob(baseJobId);
+    // Safely remove existing job if it's not active to replace the schedule
+    const oldJob = await trashCleanupQueue.getJob(jobId);
     if (oldJob) {
       const state = await oldJob.getState();
       if (state === 'delayed' || state === 'waiting') {
-        try { await oldJob.remove(); } catch (e) { console.warn(`[TrashCleanup] Could not remove existing job ${baseJobId}:`, e.message); }
+        try { await oldJob.remove(); } catch (e) { console.warn(`[TrashCleanup] Could not remove existing job ${jobId}:`, e.message); }
       }
     }
 
@@ -28,12 +27,12 @@ async function enqueueCollectionCleanup(projectId, collectionName, delay = 0) {
       'cleanup-collection',
       { projectId, collectionName },
       {
-        jobId: jobId,
+        jobId: jobId, // Deterministic ID for deduplication and replacing schedules
         delay: Math.max(delay, 0),
         attempts: 3,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: { age: 86400 },
-        removeOnFail: true,
+        removeOnFail: false, // Keep failed jobs visible for debugging
       }
     );
   } catch (err) {

@@ -980,7 +980,7 @@ module.exports.deleteRow = async (req, res) => {
     try {
       await enqueueCollectionCleanup(projectId, collectionName);
     } catch (err) {
-      console.error("Failed to enqueue trash cleanup job", err);
+      console.error("Failed to enqueue trash cleanup job", { projectId, collectionName, err });
     }
 
     res.json({ success: true, data: { id: result._id }, message: "Document moved to trash" });

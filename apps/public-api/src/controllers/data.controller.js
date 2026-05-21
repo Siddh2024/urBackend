@@ -603,7 +603,7 @@ module.exports.deleteSingleDoc = async (req, res) => {
     try {
       await enqueueCollectionCleanup(project._id, collectionName);
     } catch (err) {
-      console.error("Failed to enqueue trash cleanup job", err);
+      console.error("Failed to enqueue trash cleanup job", { projectId: string(project._id), collectionName,  err });
     }
 
     dispatchWebhooks({
