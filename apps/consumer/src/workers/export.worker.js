@@ -1,11 +1,8 @@
-const dotenv = require('dotenv');
-dotenv.config({ path: require('path').join(__dirname, '../../../.env') });
-
 const { Worker } = require('bullmq');
-const mongoose = require('mongoose')
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
 const { 
     redis, 
     exportQueue, 
@@ -16,12 +13,6 @@ const {
     getStorage, 
     getBucket 
 } = require('@urbackend/common');
-
-const { validateEnv } = require('@urbackend/common');
-
-if (process.env.NODE_ENV !== 'test') {
-    validateEnv();
-}
 
 const initExportWorker = () => {
     const worker = new Worker(exportQueue.name, async (job) => {
@@ -109,21 +100,4 @@ const initExportWorker = () => {
     return worker;
 };
 
-if (require.main === module) {
-
-    const { connectDB } = require('@urbackend/common');
-
-    (async () => {
-        try {
-            await connectDB();
-
-            initExportWorker();
-
-            console.log('[CONSUMER] Export worker started and listening for jobs...');
-        } catch (err) {
-            console.error('Failed to start worker:', err);
-            process.exit(1);
-        }
-    })();
-}
 module.exports = { initExportWorker };
