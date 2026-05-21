@@ -154,6 +154,12 @@ if (process.env.NODE_ENV !== 'test') {
         const gracefulShutdown = async () => {
             console.log('🛑 SIGTERM/SIGINT received. Shutting down gracefully...');
 
+            // Force close after 10s
+            const forceShutdown = setTimeout(() => {
+                console.error('Force shutting down...');
+                process.exit(1);
+            }, 10000);
+
             if (trashCleanupWorker) {
                 try {
                     await trashCleanupWorker.close();
@@ -168,18 +174,13 @@ if (process.env.NODE_ENV !== 'test') {
                 try {
                     await mongoose.connection.close(false);
                     console.log('✅ MongoDB connection closed.');
+                    clearTimeout(forceShutdown);
                     process.exit(0);
                 } catch (err) {
                     console.error('❌ Error closing MongoDB connection:', err);
                     process.exit(1);
                 }
             });
-
-            // Force close after 10s
-            setTimeout(() => {
-                console.error('Force shutting down...');
-                process.exit(1);
-            }, 10000);
         };
 
         process.on('SIGTERM', gracefulShutdown);
