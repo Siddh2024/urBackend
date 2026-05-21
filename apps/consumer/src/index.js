@@ -1,5 +1,5 @@
 const dotenv = require('dotenv');
-dotenv.config({ path: require('path').join(__dirname, '../../.env') });
+dotenv.config({ path: require('path').join(__dirname, '../../../.env') });
 
 const { validateEnv } = require('@urbackend/common');
 
@@ -7,7 +7,7 @@ if (process.env.NODE_ENV !== 'test') {
     validateEnv();
 }
 
-const { initExportWorker } = require('./src/workers/export.worker');
+const { initExportWorker } = require('./workers/export.worker');
 
 const { connectDB } = require('@urbackend/common');
 

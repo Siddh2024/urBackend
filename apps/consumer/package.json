@@ -4,8 +4,8 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "dev": "node index.js",
-    "start": "node index.js",
+    "dev": "node src/index.js",
+    "start": "node src/index.js",
     "test": "jest --testPathPatterns=src/"
   },
   "keywords": [],
