@@ -9,28 +9,41 @@ if (!process.env.GROQ_API_KEY) {
 const prSummary = process.argv[2] || "No PRs merged this week.";
 const prCount = process.argv[3] || "0";
 
-const prompt = `You are a technical writer for urBackend, an open-source Backend-as-a-Service platform.
+const TODAY = new Date().toISOString().slice(0, 10);
+const WEEK_START = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .slice(0, 10);
 
-Based on the following merged pull requests from the last 7 days, write a concise weekly changelog entry.
+const prompt = `You are a technical writer for urBackend, an open-source Backend-as-a-Service platform (auth, database, storage, mail, webhooks, RLS).
+
+Based on the following merged pull requests from the last 7 days, write a Mintlify changelog <Update> entry.
 
 Merged PRs (${prCount} total):
 ${prSummary}
 
-Instructions:
-- Group changes under "Added", "Fixed", "Changed", or "Security" headings as appropriate
-- Use bullet points for each change
-- Keep each bullet point concise and developer-friendly
-- If no PRs were merged, write "No changes this week."
-- Do NOT include version numbers or dates (those are added separately)
-- Do NOT add any preamble or explanation, just the changelog content
+Output ONLY the raw <Update> MDX block — no explanation, no markdown fences.
+Use this exact format (matching the existing changelog style):
 
-Example format:
-### Added
-- New feature description (#PR_NUMBER)
+<Update label="${TODAY}" description="Week of ${WEEK_START}–${TODAY}" tags={["Feature", "Improvement", "Fix"]}>
+## New features
 
-### Fixed
-- Bug fix description (#PR_NUMBER)
-`;
+**Feature name** — User-facing description.
+
+## Improvements
+
+**Improvement name** — Description.
+
+## Bug fixes
+
+- Fix description (#PR_NUMBER)
+</Update>
+
+Rules:
+- Only include sections (## New features / ## Improvements / ## Bug fixes) that have actual content.
+- Adjust the tags array to only include applicable tags from: "Feature", "Improvement", "Fix", "Security".
+- Write for developers using the platform, not the internal team.
+- Be concise and factual. Do not invent features not evidenced by the PRs.
+- If no PRs were merged, output: <Update label="${TODAY}" description="Week of ${WEEK_START}–${TODAY}" tags={[]}>No significant changes this week.</Update>`;
 
 const payload = JSON.stringify({
   model: "openai/gpt-oss-120b",
@@ -82,7 +95,7 @@ const req = https.request(options, (res) => {
   });
 });
 
-// Add timeout to prevent workflow from hanging indefinitely
+// Prevent workflow from hanging indefinitely
 req.setTimeout(30000, () => {
   console.error("Error: Groq API request timed out after 30 seconds.");
   req.destroy();

@@ -60,20 +60,43 @@ jobs:
           PR_SUMMARY: ${{ steps.get-prs.outputs.pr_summary }}
           PR_COUNT: ${{ steps.get-prs.outputs.pr_count }}
         run: |
-          node .github/scripts/generate-changelog-entry.js "$PR_SUMMARY" "$PR_COUNT" > changelog_entry.md
+          node .github/scripts/generate-changelog-entry.js "$PR_SUMMARY" "$PR_COUNT" > changelog_entry.mdx
           echo "Generated changelog entry:"
-          cat changelog_entry.md
+          cat changelog_entry.mdx
 
-      - name: Prepend entry to CHANGELOG.md
+      - name: Prepend entry to current month's Mintlify changelog
         run: |
-          TODAY=$(date +%Y-%m-%d)
-          echo "## [Unreleased] - $TODAY" > temp_entry.md
-          echo "" >> temp_entry.md
-          cat changelog_entry.md >> temp_entry.md
-          echo "" >> temp_entry.md
+          MONTH=$(date --utc +%B | tr '[:upper:]' '[:lower:]')
+          YEAR=$(date --utc +%Y)
+          FILE="mintlify/docs/changelog/${MONTH}-${YEAR}.mdx"
 
-          awk '/^## \[Unreleased\]/{print; while((getline line < "temp_entry.md") > 0) print line; next} 1' CHANGELOG.md > CHANGELOG_new.md
-          mv CHANGELOG_new.md CHANGELOG.md
+          # Create monthly file if it doesn't exist yet
+          if [ ! -f "$FILE" ]; then
+            cat > "$FILE" << MDXEOF
+---
+title: Changelog
+description: What's new in urBackend — new features, improvements, and fixes.
+---
+
+MDXEOF
+          fi
+
+          # Insert new <Update> entry right after the closing --- of frontmatter
+          FRONTMATTER_END=$(grep -n "^---$" "$FILE" | sed -n '2p' | cut -d: -f1)
+          if [ -z "$FRONTMATTER_END" ]; then
+            cat changelog_entry.mdx >> "$FILE"
+          else
+            {
+              head -n "$FRONTMATTER_END" "$FILE"
+              echo ""
+              cat changelog_entry.mdx
+              echo ""
+              tail -n +"$((FRONTMATTER_END + 1))" "$FILE"
+            } > /tmp/patched.mdx
+            mv /tmp/patched.mdx "$FILE"
+          fi
+
+          echo "Updated: $FILE"
 
       - name: Open Pull Request
         env:
@@ -83,7 +106,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add CHANGELOG.md
+          git add mintlify/docs/changelog/
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "docs: weekly changelog update $(date +%Y-%m-%d)"
           git push origin "$BRANCH"
