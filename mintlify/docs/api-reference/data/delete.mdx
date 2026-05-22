@@ -1,11 +1,11 @@
 ---
 title: "Delete Document"
-description: "Permanently delete a document from a collection by its ID."
+description: "Soft delete a document from a collection by its ID. Moves it to the trash."
 ---
 
 ## DELETE `/api/data/:collectionName/:id`
 
-Permanently removes the document with the given ID from the collection. This operation cannot be undone.
+Moves the document with the given ID to the trash by setting `isDeleted: true` and recording the `deletedAt` timestamp. The document remains recoverable for a **30-day grace period**, after which it is permanently deleted by a background cleanup worker. See the [Database Guide](/guides/database#soft-delete-trash) for more details.
 
 ### Required Header
 

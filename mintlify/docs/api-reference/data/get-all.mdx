@@ -41,6 +41,10 @@ Returns a list of documents from the specified collection. Supports pagination, 
   a comparison operator. Example: `filter[status][eq]=published&filter[views][gt]=100`
 </ParamField>
 
+<ParamField query="include_deleted" type="boolean">
+  If `true`, includes soft-deleted documents (`isDeleted: true`) in the response. Defaults to `false` (trashed documents are excluded by default).
+</ParamField>
+
 ### RLS Behavior
 
 If the collection has **RLS** enabled:
@@ -71,7 +75,8 @@ const params = new URLSearchParams({
   page: '1',
   limit: '10',
   sort: '-createdAt',
-  'filter[status][eq]': 'published'
+  'filter[status][eq]': 'published',
+  include_deleted: 'true'
 });
 
 const res = await fetch(
@@ -88,7 +93,7 @@ const { success, data, message } = await res.json();
 ```
 
 ```bash curl
-curl "https://api.ub.bitbros.in/api/data/posts?page=1&limit=10&sort=-createdAt&filter[status][eq]=published" \
+curl "https://api.ub.bitbros.in/api/data/posts?page=1&limit=10&sort=-createdAt&filter[status][eq]=published&include_deleted=true" \
   -H "x-api-key: pk_live_YOUR_KEY"
 ```
 
@@ -113,16 +118,20 @@ const res = await fetch('https://api.ub.bitbros.in/api/data/notes', {
       "_id": "64fd1234abcd5678ef901234",
       "title": "Why BaaS is the future",
       "status": "published",
+      "isDeleted": false,
+      "deletedAt": null,
       "createdAt": "2024-01-15T10:30:00.000Z"
     },
     {
       "_id": "64fd5678abcd1234ef905678",
       "title": "Getting started with urBackend",
       "status": "published",
+      "isDeleted": true,
+      "deletedAt": "2026-05-20T10:30:00.000Z",
       "createdAt": "2024-01-14T08:00:00.000Z"
     }
   ],
-  "message": "Documents fetched successfully"
+  "message": "Data fetched successfully"
 }
 ```
 

@@ -21,6 +21,12 @@ Fetches one document by its `_id`. Returns `404` if no document with that ID exi
   The MongoDB ObjectId string of the document to retrieve (e.g., `64fd1234abcd5678ef901234`).
 </ParamField>
 
+### Query Parameters
+
+<ParamField query="include_deleted" type="boolean">
+  If `true`, allows retrieval of a soft-deleted document. Defaults to `false`. Without this parameter, requesting a soft-deleted document by ID will return `404 Not Found`.
+</ParamField>
+
 ### Response Fields
 
 <ResponseField name="success" type="boolean">
@@ -43,7 +49,7 @@ Fetches one document by its `_id`. Returns `404` if no document with that ID exi
 const docId = '64fd1234abcd5678ef901234';
 
 const res = await fetch(
-  `https://api.ub.bitbros.in/api/data/posts/${docId}`,
+  `https://api.ub.bitbros.in/api/data/posts/${docId}?include_deleted=true`,
   {
     headers: {
       'x-api-key': 'pk_live_YOUR_KEY'
@@ -56,7 +62,7 @@ const { success, data, message } = await res.json();
 ```
 
 ```bash curl
-curl "https://api.ub.bitbros.in/api/data/posts/64fd1234abcd5678ef901234" \
+curl "https://api.ub.bitbros.in/api/data/posts/64fd1234abcd5678ef901234?include_deleted=true" \
   -H "x-api-key: pk_live_YOUR_KEY"
 ```
 
@@ -72,6 +78,8 @@ curl "https://api.ub.bitbros.in/api/data/posts/64fd1234abcd5678ef901234" \
     "title": "Why BaaS is the future",
     "body": "Content goes here...",
     "status": "published",
+    "isDeleted": false,
+    "deletedAt": null,
     "tags": ["tech", "development"],
     "meta": {
       "views": 105,

@@ -52,6 +52,19 @@ The schema engine is strict about types:
 
 Sending the wrong type returns a `400` validation error.
 
+## System-managed fields
+
+urBackend automatically adds the following fields to all collections to manage the soft delete lifecycle:
+
+- `isDeleted` (Boolean, default `false`) — Indicates whether a document is in the trash.
+- `deletedAt` (Date, default `null`) — Timestamp of when the document was soft-deleted.
+
+These fields are strictly managed by the system. They cannot be set, modified, or manually filtered by clients directly.
+
+<Note>
+  Documents with `isDeleted: true` are excluded from normal read queries by default.
+</Note>
+
 ## Defining field constraints
 
 ### Required fields
