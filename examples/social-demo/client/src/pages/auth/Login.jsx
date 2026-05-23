@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import { authApi } from '../../lib/api';
@@ -12,11 +12,64 @@ export default function Login() {
     email: '',
     password: '',
   });
+  const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
+  const [lockedEmail, setLockedEmail] = useState('');
+
+  const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
+  const parseRetryAfterSeconds = (error) => {
+    const payload = error?.response?.data || {};
+
+    const retryAfterFromBody = Number(payload?.retryAfterSeconds);
+    if (Number.isFinite(retryAfterFromBody) && retryAfterFromBody > 0) {
+      return Math.floor(retryAfterFromBody);
+    }
+
+    const retryAfterHeader = Number(error?.response?.headers?.['retry-after']);
+    if (Number.isFinite(retryAfterHeader) && retryAfterHeader > 0) {
+      return Math.floor(retryAfterHeader);
+    }
+
+    const message = String(payload?.message || payload?.error || '');
+    const secondsMatch = message.match(/(\d+)\s*seconds?/i);
+    if (secondsMatch) {
+      return Number(secondsMatch[1]);
+    }
+
+    return 60;
+  };
+
+  useEffect(() => {
+    if (lockoutSecondsRemaining <= 0) return undefined;
+
+    const timer = window.setInterval(() => {
+      setLockoutSecondsRemaining((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [lockoutSecondsRemaining]);
+
+  const isLockoutActive = useMemo(() => {
+    return (
+      lockoutSecondsRemaining > 0 &&
+      normalizeEmail(formData.email) !== '' &&
+      normalizeEmail(formData.email) === lockedEmail
+    );
+  }, [formData.email, lockoutSecondsRemaining, lockedEmail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLockoutActive) return;
+
     login(formData, {
       onSuccess: () => navigate('/'),
+      onError: (error) => {
+        if (error?.response?.status === 423) {
+          const seconds = parseRetryAfterSeconds(error);
+          setLockedEmail(normalizeEmail(formData.email));
+          setLockoutSecondsRemaining(seconds);
+        }
+      },
     });
   };
 
@@ -62,7 +115,13 @@ export default function Login() {
             required
           />
 
-          {loginError && (
+          {isLockoutActive && (
+            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-500 rounded-lg text-yellow-700 dark:text-yellow-300 text-sm">
+              Too many failed attempts. Try again in {lockoutSecondsRemaining} seconds.
+            </div>
+          )}
+
+          {loginError && !isLockoutActive && (
             <div className="p-3 bg-red-100 dark:bg-red-900/20 border border-red-500 rounded-lg text-red-500 text-sm">
               {loginError.response?.data?.message || 'Failed to login. Please check your credentials.'}
             </div>
@@ -72,9 +131,9 @@ export default function Login() {
             type="submit"
             className="w-full"
             size="lg"
-            disabled={isLoginLoading}
+            disabled={isLoginLoading || isLockoutActive}
           >
-            {isLoginLoading ? 'Signing in...' : 'Sign In'}
+            {isLoginLoading ? 'Signing in...' : isLockoutActive ? `Locked (${lockoutSecondsRemaining}s)` : 'Sign In'}
           </Button>
 
           <div className="relative py-2">
