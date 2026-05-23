@@ -35,7 +35,7 @@ Runs a MongoDB aggregation pipeline on the specified collection. This allows for
 
 ### RLS behavior
 
-If Row-Level Security (RLS) is enabled, urBackend automatically injects a `$match` stage at the beginning of your pipeline (or after `$geoNear` / `$search` if present). This ensures users only aggregate data they have access to.
+If Row-Level Security (RLS) is enabled, your backend automatically injects a `$match` stage at the beginning of your pipeline (or after `$geoNear` / `$search` if present). This ensures users only aggregate data they have access to.
 
 ### Response fields
 
