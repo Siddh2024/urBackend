@@ -276,10 +276,9 @@ async function getS3CompatibleStorage(project) {
     if (!project.resources?.storage?.isExternal) {
 
         if (
-            !process.env.SUPABASE_S3_ENDPOINT ||
-            !process.env.SUPABASE_S3_ACCESS_KEY_ID ||
-            !process.env.SUPABASE_S3_SECRET_ACCESS_KEY ||
-            !process.env.SUPABASE_BUCKET
+            !process.env.SUPABASE_URL ||
+            !process.env.SUPABASE_PUBLIC_KEY ||
+            !process.env.SUPABASE_SECRET_KEY
         ) {
             throw new Error(
                 "Internal Supabase S3 configuration is incomplete"
@@ -288,18 +287,17 @@ async function getS3CompatibleStorage(project) {
 
         const s3Client = new S3Client({
             region: "auto",
-            endpoint: process.env.SUPABASE_S3_ENDPOINT,
+            endpoint: process.env.SUPABASE_URL,
             forcePathStyle: true,
             credentials: {
-                accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID,
-                secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY
+                accessKeyId: process.env.SUPABASE_PUBLIC_KEY,
+                secretAccessKey: process.env.SUPABASE_SECRET_KEY
             }
         });
 
         return {
             provider: "supabase_internal",
-            s3Client,
-            bucket: process.env.SUPABASE_BUCKET
+            s3Client
         };
     }
 
@@ -322,8 +320,7 @@ async function getS3CompatibleStorage(project) {
         if (
             !config.s3Endpoint ||
             !config.s3AccessKeyId ||
-            !config.s3SecretAccessKey ||
-            !config.bucket
+            !config.s3SecretAccessKey
         ) {
             throw new Error(
                 "Supabase S3-compatible configuration is incomplete"
@@ -342,8 +339,7 @@ async function getS3CompatibleStorage(project) {
 
         return {
             provider,
-            s3Client,
-            bucket: config.bucket
+            s3Client
         };
     }
 
@@ -353,8 +349,7 @@ async function getS3CompatibleStorage(project) {
         if (
             !config.endpoint ||
             !config.accessKeyId ||
-            !config.secretAccessKey ||
-            !config.bucket
+            !config.secretAccessKey
         ) {
             throw new Error(
                 "S3-compatible storage configuration is incomplete"
@@ -373,8 +368,7 @@ async function getS3CompatibleStorage(project) {
 
         return {
             provider,
-            s3Client,
-            bucket: config.bucket
+            s3Client
         };
     }
 
