@@ -940,7 +940,7 @@ module.exports.insertData = async (req, res) => {
  * @param {import('express').Request} req - Express request
  * @param {import('express').Response} res - Express response
  */
-module.exports.deleteRow = async (req, res) => {
+module.exports.deleteRow = async (req, res, next) => {
   try {
     const { projectId, collectionName, id } = req.params;
 
@@ -948,13 +948,13 @@ module.exports.deleteRow = async (req, res) => {
       _id: projectId,
       owner: req.user._id,
     });
-    if (!project) return res.status(404).json({ error: "Project not found." });
+    if (!project) return next(new AppError(404, "Project not found."));
 
     const collectionConfig = project.collections.find(
       (c) => c.name === collectionName,
     );
     if (!collectionConfig) {
-      return res.status(404).json({ error: "Collection not found." });
+      return next(new AppError(404, "Collection not found."));
     }
 
     const connection = await getConnection(projectId);
@@ -977,7 +977,7 @@ module.exports.deleteRow = async (req, res) => {
     ).lean();
 
     if (!result) {
-      return res.status(404).json({ success: false, data: {}, message: "Document not found." });
+      return next(new AppError(404, "Document not found."));
     }
 
     // We don't decrement databaseUsed here because the document still occupies space.
@@ -991,7 +991,7 @@ module.exports.deleteRow = async (req, res) => {
     res.json({ success: true, data: { id: result._id }, message: "Document moved to trash" });
   } catch (err) {
     console.error("Delete Error:", err);
-    res.status(500).json({ error: err.message });
+    next(new AppError(500, "Failed to delete document"));
   }
 };
 /**
@@ -1005,11 +1005,7 @@ module.exports.recoverRow = async (req, res, next) => {
     const { projectId, collectionName, id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        data: {},
-        message: "Invalid id"
-      });
+      return next(new AppError(400, "Invalid document ID format."));
     }
 
     const project = await Project.findOne({
@@ -1017,22 +1013,14 @@ module.exports.recoverRow = async (req, res, next) => {
       owner: req.user._id,
     }).lean();
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        data: {},
-        message: "Project not found."
-      });
+      return next(new AppError(404, "Project not found."));
     }
 
     const collectionConfig = project.collections.find(
       (c) => c.name === collectionName,
     );
     if (!collectionConfig) {
-      return res.status(404).json({
-        success: false,
-        data: {},
-        message: "Collection not found."
-      });
+      return next(new AppError(404, "Collection not found."));
     }
 
     const connection = await getConnection(projectId);
@@ -1055,11 +1043,7 @@ module.exports.recoverRow = async (req, res, next) => {
     ).lean();
 
     if (!result) {
-      return res.status(404).json({
-        success: false,
-        data: {},
-        message: "Document not found or not in trash."
-      });
+      return next(new AppError(404, "Document not found or not in trash."));
     }
 
     res.json({ success: true, data: result, message: "Document recovered from trash" });
