@@ -18,11 +18,13 @@ jest.mock('@urbackend/common', () => ({
         constructor(statusCode, message) {
             super(message);
             this.statusCode = statusCode;
+            this.isOperational = true;
         }
     }
 }));
 
 const { deleteRow, recoverRow } = require('../controllers/project.controller');
+const mongoose = require('mongoose');
 
 function makeReq() {
     return {
@@ -49,6 +51,7 @@ describe('Soft Delete in dashboard project.controller', () => {
     test('deleteRow sets isDeleted: true instead of hard deleting', async () => {
         const req = makeReq();
         const res = makeRes();
+        const next = jest.fn();
 
         // Mock project
         const project = {
@@ -57,7 +60,6 @@ describe('Soft Delete in dashboard project.controller', () => {
             collections: [{ name: 'posts', model: [] }],
             save: jest.fn().mockResolvedValue(true)
         };
-        // deleteRow uses Project.findOne without chaining
         mockFindOne.mockResolvedValue(project);
 
         // Mock document
@@ -66,7 +68,7 @@ describe('Soft Delete in dashboard project.controller', () => {
             lean: jest.fn().mockResolvedValue(doc)
         });
 
-        await deleteRow(req, res);
+        await deleteRow(req, res, next);
 
         expect(mockFindOne).toHaveBeenCalled();
         expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
@@ -84,9 +86,10 @@ describe('Soft Delete in dashboard project.controller', () => {
         });
     });
 
-    test('deleteRow returns 404 if document is already soft-deleted or not found', async () => {
+    test('deleteRow returns 404 via next(AppError) if document is already soft-deleted or not found', async () => {
         const req = makeReq();
         const res = makeRes();
+        const next = jest.fn();
 
         // Mock project
         const project = {
@@ -101,19 +104,18 @@ describe('Soft Delete in dashboard project.controller', () => {
             lean: jest.fn().mockResolvedValue(null)
         });
 
-        await deleteRow(req, res);
+        await deleteRow(req, res, next);
 
-        expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ 
-            success: false, 
-            data: {}, 
-            message: "Document not found." 
-        });
+        expect(next).toHaveBeenCalledWith(expect.objectContaining({
+            statusCode: 404,
+            message: "Document not found."
+        }));
     });
 
     test('recoverRow restores a soft-deleted document', async () => {
         const req = makeReq();
         const res = makeRes();
+        const next = jest.fn();
 
         // Mock project
         const project = {
@@ -134,7 +136,7 @@ describe('Soft Delete in dashboard project.controller', () => {
             lean: jest.fn().mockResolvedValue(restoredDoc)
         });
 
-        await recoverRow(req, res);
+        await recoverRow(req, res, next);
 
         expect(mockFindOne).toHaveBeenCalledWith({ _id: 'proj_1', owner: 'user_1' });
         expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
@@ -152,9 +154,10 @@ describe('Soft Delete in dashboard project.controller', () => {
         });
     });
 
-    test('recoverRow returns 404 if document is not in trash', async () => {
+    test('recoverRow returns 404 via next(AppError) if document is not in trash', async () => {
         const req = makeReq();
         const res = makeRes();
+        const next = jest.fn();
 
         // Mock project
         const project = {
@@ -171,17 +174,15 @@ describe('Soft Delete in dashboard project.controller', () => {
             lean: jest.fn().mockResolvedValue(null)
         });
 
-        await recoverRow(req, res);
+        await recoverRow(req, res, next);
 
-        expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ 
-            success: false, 
-            data: {}, 
-            message: "Document not found or not in trash." 
-        });
+        expect(next).toHaveBeenCalledWith(expect.objectContaining({
+            statusCode: 404,
+            message: "Document not found or not in trash."
+        }));
     });
 
-    test('recoverRow returns 409 if document restoration causes a unique field conflict', async () => {
+    test('recoverRow returns 409 via next(AppError) if document restoration causes a unique field conflict', async () => {
         const req = makeReq();
         const res = makeRes();
         const next = jest.fn();
@@ -209,7 +210,7 @@ describe('Soft Delete in dashboard project.controller', () => {
         }));
     });
 
-    test('recoverRow returns 400 if document ID is invalid', async () => {
+    test('recoverRow returns 400 via next(AppError) if document ID is invalid', async () => {
         const req = {
             params: { projectId: 'proj_1', collectionName: 'posts', id: 'invalid-id' },
             user: { _id: 'user_1' }
@@ -219,11 +220,9 @@ describe('Soft Delete in dashboard project.controller', () => {
 
         await recoverRow(req, res, next);
 
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            data: {},
-            message: "Invalid id"
-        });
+        expect(next).toHaveBeenCalledWith(expect.objectContaining({
+            statusCode: 400,
+            message: "Invalid document ID format."
+        }));
     });
 });
