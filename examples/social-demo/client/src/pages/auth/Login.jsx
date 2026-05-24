@@ -15,8 +15,18 @@ export default function Login() {
   const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
   const [lockedEmail, setLockedEmail] = useState('');
 
+  /**
+   * Normalizes an email address for stable lockout comparison.
+   * @param {string} value - Raw email input value.
+   * @returns {string} Normalized email.
+   */
   const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 
+  /**
+   * Extracts the retry window in seconds from a lockout API error.
+   * @param {Error & { response?: { data?: object, headers?: object } }} error - Axios error.
+   * @returns {number} Retry delay in seconds.
+   */
   const parseRetryAfterSeconds = (error) => {
     const payload = error?.response?.data || {};
 
@@ -57,12 +67,40 @@ export default function Login() {
     );
   }, [formData.email, lockoutSecondsRemaining, lockedEmail]);
 
+  /**
+   * Updates the email field in the login form.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Email input change event.
+   */
+  const handleEmailChange = (e) => {
+    setFormData((current) => ({ ...current, email: e.target.value }));
+  };
+
+  /**
+   * Updates the password field in the login form.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Password input change event.
+   */
+  const handlePasswordChange = (e) => {
+    setFormData((current) => ({ ...current, password: e.target.value }));
+  };
+
+  /**
+   * Navigates to the dashboard after a successful login mutation.
+   */
+  const handleLoginSuccess = () => {
+    navigate('/');
+  };
+
+  /**
+   * Submits the login form and forwards successful sign-ins to the home page.
+   * @param {React.FormEvent<HTMLFormElement>} e - Form submit event.
+   * @returns {Promise<void>}
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLockoutActive) return;
 
     login(formData, {
-      onSuccess: () => navigate('/'),
+      onSuccess: handleLoginSuccess,
       onError: (error) => {
         if (error?.response?.status === 423) {
           const seconds = parseRetryAfterSeconds(error);
@@ -102,7 +140,7 @@ export default function Login() {
             label="Email"
             placeholder="Enter your email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={handleEmailChange}
             required
           />
           
@@ -111,7 +149,7 @@ export default function Login() {
             label="Password"
             placeholder="Enter your password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={handlePasswordChange}
             required
           />
 
