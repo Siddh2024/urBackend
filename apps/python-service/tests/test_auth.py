@@ -2,9 +2,17 @@ import pytest
 import hmac
 import hashlib
 import time
+import os
+import sys
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
+
+SERVICE_ROOT = Path(__file__).resolve().parents[1]
+if str(SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SERVICE_ROOT))
+os.environ.setdefault("INTERNAL_SECRET", "test-internal-secret")
 
 from dependencies import verify_signature
 from config import settings

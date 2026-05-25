@@ -36,6 +36,12 @@ const queryBuilder = async (req, res, next) => {
         }
 
         const collection = project.collections[0];
+        const allowedFields = new Set([
+            ...collection.model.map(field => field.key),
+            '_id',
+            'createdAt',
+            'updatedAt'
+        ]);
         
         // 2. Extract simplified schema fields for the LLM
         // We only send key and type to save tokens and prevent confusion
@@ -60,7 +66,18 @@ const queryBuilder = async (req, res, next) => {
         // 4. Return the structured JSON to the frontend
         // Ensure filters is always an array to prevent frontend crash
         const rawFilters = Array.isArray(aiResponse.filters) ? aiResponse.filters : [];
-        const safeFilters = rawFilters.filter(f => f && typeof f.field === 'string' && typeof f.operator === 'string' && f.value !== undefined);
+        const allowedOperators = new Set(['=', '_gt', '_lt', '_gte', '_lte', '_ne', '_regex']);
+        const safeFilters = rawFilters.filter(f => {
+            const isPrimitiveValue = ['string', 'number', 'boolean'].includes(typeof f?.value);
+            return (
+                f &&
+                typeof f.field === 'string' &&
+                typeof f.operator === 'string' &&
+                allowedFields.has(f.field) &&
+                allowedOperators.has(f.operator) &&
+                isPrimitiveValue
+            );
+        });
 
         res.status(200).json({
             success: true,

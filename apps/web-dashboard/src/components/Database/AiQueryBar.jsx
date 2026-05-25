@@ -6,10 +6,11 @@ import api from '../../utils/api';
 const AiQueryBar = ({ projectId, activeCollection, onFiltersGenerated }) => {
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const canSubmit = Boolean(projectId && activeCollection?.name);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!prompt.trim()) return;
+        if (!prompt.trim() || !canSubmit) return;
 
         setIsLoading(true);
         try {
@@ -20,7 +21,9 @@ const AiQueryBar = ({ projectId, activeCollection, onFiltersGenerated }) => {
 
             if (res.data?.success && res.data?.data) {
                 const { filters, sort } = res.data.data;
-                onFiltersGenerated(filters, sort);
+                if (typeof onFiltersGenerated === 'function') {
+                    onFiltersGenerated(filters, sort);
+                }
                 toast.success('AI query applied!');
                 setPrompt('');
             } else {
@@ -58,7 +61,7 @@ const AiQueryBar = ({ projectId, activeCollection, onFiltersGenerated }) => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Ask AI to filter data..."
-                disabled={isLoading || !activeCollection}
+                disabled={isLoading || !activeCollection || !projectId}
                 style={{ 
                     background: 'transparent', 
                     border: 'none', 

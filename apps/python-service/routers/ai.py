@@ -14,8 +14,8 @@ class FilterItem(BaseModel):
     value: Union[str, int, float, bool] = Field(description="The value to filter by")
 
 class QueryResult(BaseModel):
-    filters: List[FilterItem] = Field(description="List of MongoDB filters to apply to the frontend")
-    sort: str = Field(description="MongoDB sort string, e.g. '-createdAt' or 'name'. Default to '-createdAt'")
+    filters: List[FilterItem] = Field(default_factory=list, description="List of MongoDB filters to apply to the frontend")
+    sort: str = Field(default="-createdAt", description="MongoDB sort string, e.g. '-createdAt' or 'name'. Default to '-createdAt'")
 
 class QueryBuilderRequest(BaseModel):
     prompt: str
@@ -63,5 +63,5 @@ Schema Fields: {schema}"""
         
         return result
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to generate query")
