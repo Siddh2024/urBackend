@@ -3,10 +3,14 @@ title: Changelog (May 2026)
 description: What's new in urBackend — new features, improvements, and fixes for May.
 ---
 
-<Update label="2026-05-25" description="Week of 2026-05-18–2026-05-25" tags={["Feature", "Improvement", "Fix"]}>
+<Update label="2026-05-25" description="Updates from May 12 – May 25" tags={["Feature", "Improvement", "Fix"]}>
 ## New features
 
 **Soft Delete & Trash Cleanup Worker** — Adds API support for soft‑deleting records and a background worker that permanently removes items from the trash after a configurable retention period.
+
+**Mail Platform Expansion** — Expands the Mail API ecosystem with BYOK (Bring Your Own Key) support, Broadcast capabilities, and a comprehensive developer guide.
+
+**Login Lockout Protection** — Introduces a Redis-backed per-email login lockout system after 5 failed attempts, handling lockouts with a 423 status code and a retry countdown.
 
 ## Improvements
 
@@ -14,12 +18,22 @@ description: What's new in urBackend — new features, improvements, and fixes f
 
 **Landing Page UI/UX** — Refines layout and interaction cues on the landing page for a smoother first‑time visitor experience.
 
+**NoSQL Injection Sanitization** — Enhances API security by sanitizing root-level array payloads and recursively sanitizing nested MongoDB operators.
+
+**Automated Release Notes** — Integrates a unified CHANGELOG.md following the "Keep a Changelog" standard and automates weekly release notes via GitHub Actions.
+
 ## Bug fixes
 
-- Address PR review feedback for AI Query Builder (#205)  
-- Handle 423 login lockout with retry countdown (#199)  
-- Resolve remaining review issues from PR #124 (#180)  
-- Make database empty‑state cURL snippet RLS‑aware to prevent 403 errors (#190)  
+- Handle 423 login lockout with retry countdown
+- Address PR review feedback for AI Query Builder
+- Resolve remaining review issues from PR #124
+- Make database empty‑state cURL snippet RLS‑aware to prevent 403 errors
+- Replace hardcoded sender domains with environment variables and fallbacks
+- Fix email parameter trimming and remove regex-based sender parsing
+- Sanitize root-level array payloads and nested operators for NoSQL security
+- Enforce broadcast gating with plan limits
+- Address CodeQL server-side request forgery findings
+- Append run_id to changelog branch name to prevent same-day conflicts
 </Update>
 
 
