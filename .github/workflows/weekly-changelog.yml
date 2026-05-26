@@ -104,9 +104,9 @@ jobs:
           token: ${{ secrets.CHANGELOG_PR_TOKEN || secrets.GITHUB_TOKEN }}
           branch: changelog/week-of-${{ github.run_id }}
           base: main
-          commit-message: docs: weekly changelog update
-          title: docs: weekly changelog update
-          body: Auto-generated weekly changelog entry. Please review before merging.
+          commit-message: 'docs: weekly changelog update'
+          title: 'docs: weekly changelog update'
+          body: 'Auto-generated weekly changelog entry. Please review before merging.'
           labels: documentation
           add-paths: |
             mintlify/docs/changelog/
