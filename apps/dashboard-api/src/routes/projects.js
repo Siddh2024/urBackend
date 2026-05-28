@@ -154,6 +154,6 @@ router.get('/:projectId/admin/users/:userId/sessions', authMiddleware, loadProje
 router.delete('/:projectId/admin/users/:userId/sessions/:tokenId', authMiddleware, loadProjectForAdmin, checkAuthEnabled, revokeUserSession);
 
 // POST req for DB EXPORT
-router.post('/:projectId/export', authMiddleware, exportController.dbExportHandler);
+router.post('/:projectId/collections/:collectionName/export', authMiddleware, exportController.dbExportHandler);
 
 module.exports = router;

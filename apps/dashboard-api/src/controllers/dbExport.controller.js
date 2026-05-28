@@ -7,7 +7,7 @@ const { getProjectById, setProjectById } = require('@urbackend/common');
 
 module.exports.dbExportHandler = async (req, res, next) => {
     try {
-        const { projectId } = req.params;
+        const { projectId, collectionName } = req.params;
         const { _id: userId } = req.user;
 
         let project = await getProjectById(projectId);
@@ -22,6 +22,10 @@ module.exports.dbExportHandler = async (req, res, next) => {
         if (project.owner.toString() !== userId.toString()) {
             return next(new AppError(403, "Access denied. You are not the owner of this project."));
         }
+        
+        if (!project.collections.some(c => c.name === collectionName)) {
+            return next(new AppError(404, "Collection not found in project."));
+        }
 
         
         const developer = await Developer.findById(userId).select('email plan').lean();
@@ -30,7 +34,7 @@ module.exports.dbExportHandler = async (req, res, next) => {
         }
         const { email, plan = 'free' } = developer;
 
-        console.log(`[Dashboard API] Received export request for project ${projectId} from user ${userId} (${email})`);
+        console.log(`[Dashboard API] Received export request for collection ${collectionName} in project ${projectId} from user ${userId} (${email})`);
 
 
         const maxExports = plan === 'pro' ? 5 : 1;
@@ -47,10 +51,10 @@ module.exports.dbExportHandler = async (req, res, next) => {
             await redis.expire(key, 86400); // Set expiry to 24 hours
         }
 
-        await exportQueue.add('export-database', { projectId, userId, email });
+        await exportQueue.add('export-database', { projectId, collectionName, userId, email });
 
         return res.status(202).json({
-            message: `Database export request received. You will receive an email with a download link shortly. Usage today: ${newCount}/${maxExports}.`,
+            message: `Collection export request received. You will receive an email with a download link shortly. Usage today: ${newCount}/${maxExports}.`,
         });
 
     } catch (err) {
