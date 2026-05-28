@@ -82,6 +82,25 @@ function initWebhookWorker() {
   const worker = new Worker(
     "webhook-delivery-queue",
     async (job) => {
+      if (job.name === "trigger-webhook") {
+        const { projectId, event, collection, payload } = job.data;
+        const { dispatchWebhooks } = require("../utils/webhookDispatcher");
+
+        let action = "update";
+        if (event.includes("inserted")) action = "insert";
+        if (event.includes("deleted")) action = "delete";
+        if (event.includes("recovered")) action = "recover";
+
+        await dispatchWebhooks({
+          projectId,
+          collection,
+          action,
+          document: payload,
+          documentId: payload?._id,
+        });
+        return;
+      }
+
       const { deliveryId, webhookId, attemptNumber } = job.data;
 
       try {
