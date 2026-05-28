@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
+import { ArrowUp } from 'lucide-react';
 
 function BackToTop() {
     const [isVisible, setIsVisible] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
+        let ticking = false;
+
         const handleScroll = () => {
-            if (window.scrollY > 300) {
-                setIsVisible(true);
-            } else {
-                setIsVisible(false);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    setIsVisible(window.scrollY > 300);
+                    ticking = false;
+                });
+                ticking = true;
             }
         };
 
         window.addEventListener('scroll', handleScroll);
+        handleScroll();
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
@@ -35,6 +42,8 @@ function BackToTop() {
             onClick={handleClick}
             title="Back to Top"
             aria-label="Back to Top"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             style={{
                 position: 'fixed',
                 bottom: '2rem',
@@ -46,15 +55,16 @@ function BackToTop() {
                 borderRadius: '50%',
                 width: '45px',
                 height: '45px',
-                fontSize: '1.2rem',
                 cursor: 'pointer',
                 boxShadow: '0 0 15px rgba(0, 245, 212, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transform: isHovered ? 'scale(1.1)' : 'scale(1)',
+                transition: 'transform 0.2s ease',
             }}
         >
-            ↑
+            <ArrowUp size={20} strokeWidth={2.5} />
         </button>
     );
 }
