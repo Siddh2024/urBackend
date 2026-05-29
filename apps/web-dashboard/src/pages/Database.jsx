@@ -170,16 +170,21 @@ export default function Database() {
       }));
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
   const handleExportCollection = async () => {
-    if (!activeCollection) return;
-    const toastId = toast.loading("Requesting export...");
-    try {
-      const res = await api.post(`/api/projects/${projectId}/collections/${activeCollection.name}/export`);
-      toast.success(res.data.message || "Export initiated! Check your email.", { id: toastId, duration: 6000 });
-    } catch (err) {
-      const errMsg = err.response?.data?.message || err.response?.data?.error || "Failed to export collection";
-      toast.error(errMsg, { id: toastId });
-    }
+      if (!activeCollection || isExporting) return;
+      setIsExporting(true);
+      const toastId = toast.loading("Requesting export...");
+      try {
+          const res = await api.post(`/api/projects/${projectId}/collections/${activeCollection.name}/export`);
+          toast.success(res.data.message || "Export initiated! Check your email.", { id: toastId, duration: 6000 });
+      } catch (err) {
+          const errMsg = err.response?.data?.message || err.response?.data?.error || "Failed to export collection";
+          toast.error(errMsg, { id: toastId });
+      } finally {
+          setIsExporting(false);
+      }
   };
 
   /**
@@ -266,6 +271,7 @@ export default function Database() {
                 setIsAddModalOpen(true);
               }}
               onExport={handleExportCollection}
+              isExporting={isExporting}
               onOpenSidebar={() => setIsSidebarOpen(true)}
               showDeleted={showDeleted}
               setShowDeleted={setShowDeleted}

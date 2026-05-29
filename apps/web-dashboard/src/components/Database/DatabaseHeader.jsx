@@ -9,7 +9,7 @@ const DatabaseHeader = ({
   project, activeCollection, dataLength, viewMode, setViewMode, 
   showFilterMenu, setShowFilterMenu, filtersCount, 
   onRefresh, onRlsClick, onAddRecord, onOpenSidebar,
-  showDeleted, setShowDeleted, onFiltersGenerated, onExport
+  showDeleted, setShowDeleted, onFiltersGenerated, onExport, isExporting
 }) => {
   return (
     <header className="db-header glass-panel" style={{ 
@@ -106,7 +106,7 @@ const DatabaseHeader = ({
         )}
 
         
-        <button onClick={onExport} className="btn btn-secondary" style={{ padding: '6px 12px', height: '32px', gap: '6px', fontSize: '0.75rem' }}>
+        <button onClick={onExport} disabled={isExporting} className="btn btn-secondary" style={{ padding: '6px 12px', height: '32px', gap: '6px', fontSize: '0.75rem' }}>
           <Download size={14} /> Export
         </button>
         
