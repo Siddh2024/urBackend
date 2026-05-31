@@ -509,7 +509,8 @@ export class AuthModule {
    * const token = hashParams.get('token');
    * if (rtCode && token) {
    *   const response = await auth.socialExchange({ token, rtCode });
-   *   console.log('Social login successful:', response.accessToken);
+   *   console.log('Refresh token exchange successful, proceeding to token refresh:', response.rtToken);
+   *   await auth.refreshToken();
    * }
    */
   public async socialExchange(payload: SocialExchangePayload): Promise<SocialExchangeResponse> {

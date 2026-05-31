@@ -57,17 +57,24 @@ export async function parseApiError(response: Response): Promise<UrBackendError>
     if (typeof data === 'object' && data !== null) {
       const errData = data as Record<string, unknown>;
       if ('error' in errData) {
+        let candidate = '';
         if (typeof errData.error === 'string') {
-          message = errData.error;
+          candidate = errData.error;
         } else if (Array.isArray(errData.error) && errData.error.length > 0) {
-          message = errData.error.map((e: unknown) => {
+          candidate = errData.error.map((e: unknown) => {
             if (typeof e === 'object' && e !== null && 'message' in e) {
               return String((e as Record<string, unknown>).message);
             }
             return String(e);
           }).join(', ');
         } else {
-          message = JSON.stringify(errData.error);
+          candidate = JSON.stringify(errData.error);
+        }
+        
+        if (candidate.trim().length > 0 && candidate !== '[]' && candidate !== 'null') {
+          message = candidate;
+        } else if ('message' in errData) {
+          message = typeof errData.message === 'string' ? errData.message : JSON.stringify(errData.message);
         }
       } else if ('message' in errData) {
         if (typeof errData.message === 'string') {
