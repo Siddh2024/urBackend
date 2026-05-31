@@ -109,11 +109,18 @@ export default function Database() {
          if (f.field && f.value !== '') queryStr += `&${f.field}${f.operator === '=' ? '' : f.operator}=${encodeURIComponent(f.value)}`;
       });
       const res = await api.get(`/api/projects/${projectId}/collections/${activeCollection.name}/data${queryStr}`);
-      // Handle wrapped metadata response
-      if (res.data && res.data.items) {
+      // Handle standard API response format { success, data: { items, total } }
+      if (res.data?.success && res.data?.data?.items) {
+        setData(res.data.data.items);
+        setTotalRecords(res.data.data.total || 0);
+      } 
+      // Handle legacy metadata response { items, total }
+      else if (res.data && res.data.items) {
         setData(res.data.items);
         setTotalRecords(res.data.total || 0);
-      } else {
+      } 
+      // Fallback
+      else {
         setData(res.data || []);
         setTotalRecords(Array.isArray(res.data) ? res.data.length : 0);
       }

@@ -71,7 +71,7 @@ export async function parseApiError(response: Response): Promise<UrBackendError>
           candidate = JSON.stringify(errData.error);
         }
         
-        if (candidate.trim().length > 0 && candidate !== '[]' && candidate !== 'null') {
+        if (candidate && candidate.trim().length > 0 && candidate !== '[]' && candidate !== 'null') {
           message = candidate;
         } else if ('message' in errData) {
           message = typeof errData.message === 'string' ? errData.message : JSON.stringify(errData.message);

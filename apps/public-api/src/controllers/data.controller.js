@@ -534,54 +534,37 @@ module.exports.updateSingleData = async (req, res, next) => {
 
     // Only enforce quota for internal databases
     if (!project.resources.db.isExternal) {
-      const session = await mongoose.startSession();
-      session.startTransaction();
-
-      try {
-        // 1. Fetch existing doc securely within transaction
-        const existingDoc = await Model.findOne(queryFilter).session(session).lean();
-        if (!existingDoc) {
-          await session.abortTransaction();
-          session.endSession();
-          return next(new AppError(404, "Document not found."));
-        }
-
-        // 2. Calculate sizes
-        const oldSize = mongoose.mongo.BSON.calculateObjectSize(existingDoc);
-        const simulatedNewDoc = { ...existingDoc, ...sanitizedData };
-        const newSize = mongoose.mongo.BSON.calculateObjectSize(simulatedNewDoc);
-        const sizeDelta = newSize - oldSize;
-
-        // 3. Enforce quota if size is increasing
-        if (sizeDelta > 0) {
-          if ((project.databaseUsed || 0) + sizeDelta > project.databaseLimit) {
-            await session.abortTransaction();
-            session.endSession();
-            return next(new AppError(403, "Storage quota exceeded. Please upgrade your plan."));
-          }
-        }
-
-        // 4. Update the document
-        result = await Model.findOneAndUpdate(
-          queryFilter,
-          { $set: sanitizedData },
-          { new: true, runValidators: true, session },
-        ).lean();
-
-        // 5. Apply the delta (positive or negative) atomically
-        await Project.findByIdAndUpdate(
-          project._id,
-          { $inc: { databaseUsed: sizeDelta } },
-          { session }
-        );
-
-        await session.commitTransaction();
-        session.endSession();
-      } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        throw error;
+      // 1. Fetch existing doc securely
+      const existingDoc = await Model.findOne(queryFilter).lean();
+      if (!existingDoc) {
+        return next(new AppError(404, "Document not found."));
       }
+
+      // 2. Calculate sizes
+      const oldSize = mongoose.mongo.BSON.calculateObjectSize(existingDoc);
+      const simulatedNewDoc = { ...existingDoc, ...sanitizedData };
+      const newSize = mongoose.mongo.BSON.calculateObjectSize(simulatedNewDoc);
+      const sizeDelta = newSize - oldSize;
+
+      // 3. Enforce quota if size is increasing
+      if (sizeDelta > 0) {
+        if ((project.databaseUsed || 0) + sizeDelta > project.databaseLimit) {
+          return next(new AppError(403, "Storage quota exceeded. Please upgrade your plan."));
+        }
+      }
+
+      // 4. Update the document
+      result = await Model.findOneAndUpdate(
+        queryFilter,
+        { $set: sanitizedData },
+        { new: true, runValidators: true },
+      ).lean();
+
+      // 5. Apply the delta (positive or negative) atomically
+      await Project.findByIdAndUpdate(
+        project._id,
+        { $inc: { databaseUsed: sizeDelta } }
+      );
     } else {
       // External DB Flow (No quota checks)
       result = await Model.findOneAndUpdate(
