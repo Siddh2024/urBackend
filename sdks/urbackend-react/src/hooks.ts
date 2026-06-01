@@ -132,6 +132,17 @@ export const useAuth = () => {
   };
 };
 
+export const useUser = () => {
+  const { user, isInitializing, isLoading, error } = useUrContext();
+  return {
+    user,
+    isInitializing,
+    isLoading,
+    error,
+    isAuthenticated: !!user,
+  };
+};
+
 export const useDb = () => {
   const { db } = useUrContext();
   if (!db) {
