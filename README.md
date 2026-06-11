@@ -21,7 +21,7 @@
 <div align="center">
 
 ![Build Status](https://img.shields.io/github/actions/workflow/status/yash-pouranik/urbackend/ci.yml?branch=main)
-![Cron job status](https://api.cron-job.org/jobs/7400887/964763b9594facf3/status-7.svg)
+![Cron job status](https://api.cron-job.org/jobs/7699036/904690c229bd9d69/status-7.svg)
 ![License](https://img.shields.io/github/license/yash-pouranik/urbackend)
 ![Issues](https://img.shields.io/github/issues/yash-pouranik/urbackend)
 ![Stars](https://img.shields.io/github/stars/yash-pouranik/urbackend)
