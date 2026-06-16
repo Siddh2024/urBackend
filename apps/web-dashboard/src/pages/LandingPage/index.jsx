@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../utils/api';
 import BackToTop from '../../components/Layout/BackToTop';
 import {
     Database,
@@ -26,12 +25,12 @@ import {
     Plus,
     Github,
     Mail,
-    UserRound,
-    Eye,
-    EyeOff
+    UserRound
 } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../components/Layout/Footer';
+import MagicBento from '../../components/MagicBento/MagicBento';
+import Hyperspeed from '../../components/Hyperspeed/Hyperspeed';
 import './style.css';
 
 const HERO_ENDPOINTS = [
@@ -427,19 +426,50 @@ const APP_SERVICES = [
         color: '#409EFF',
         visual: (
             <div className="mini-visual storage-visual">
-                <div className="mini-storage-card">
-                    <div className="mini-storage-file">
-                        <HardDrive size={16} className="file-icon" />
-                        <div className="file-details">
-                            <span className="file-name">avatar_profile.png</span>
-                            <div className="file-status-container">
-                                <span className="file-size-uploading">Uploading (54%)...</span>
-                                <span className="file-size-complete">Complete • 1.4 MB</span>
+                <div className="mini-storage-panel">
+                    <div className="storage-panel-header">
+                        <HardDrive size={10} className="storage-header-icon" />
+                        <span className="storage-bucket-name">media-uploads</span>
+                        <span className="storage-file-count">3 files</span>
+                    </div>
+                    <div className="storage-file-list">
+                        <div className="storage-file-row">
+                            <div className="storage-file-type img">IMG</div>
+                            <div className="storage-file-info">
+                                <span className="storage-fname">avatar.png</span>
+                                <span className="storage-fsize">1.4 MB</span>
+                            </div>
+                            <CheckCircle size={10} className="storage-check" />
+                        </div>
+                        <div className="storage-file-row">
+                            <div className="storage-file-type doc">DOC</div>
+                            <div className="storage-file-info">
+                                <span className="storage-fname">invoice_q4.pdf</span>
+                                <span className="storage-fsize">340 KB</span>
+                            </div>
+                            <CheckCircle size={10} className="storage-check" />
+                        </div>
+                        <div className="storage-file-row storage-uploading-row">
+                            <div className="storage-file-type vid">VID</div>
+                            <div className="storage-file-info">
+                                <span className="storage-fname">demo_clip.mp4</span>
+                                <span className="storage-upload-status">
+                                    <span className="storage-uploading-text">Uploading…</span>
+                                    <span className="storage-done-text">Done • 12 MB</span>
+                                </span>
+                            </div>
+                            <div className="storage-upload-ring">
+                                <svg viewBox="0 0 20 20" width="14" height="14">
+                                    <circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
+                                    <circle cx="10" cy="10" r="8" fill="none" stroke="#00f5d4" strokeWidth="2"
+                                        strokeDasharray="50.26" strokeDashoffset="50.26" strokeLinecap="round"
+                                        className="storage-ring-progress" />
+                                </svg>
                             </div>
                         </div>
                     </div>
-                    <div className="mini-progress-bar">
-                        <div className="mini-progress-fill"></div>
+                    <div className="storage-bar-track">
+                        <div className="storage-bar-fill"></div>
                     </div>
                 </div>
             </div>
@@ -517,19 +547,70 @@ const APP_SERVICES = [
     }
 ];
 
+const HYPERSPEED_OPTIONS = {
+    distortion: 'turbulentDistortion',
+    length: 400,
+    roadWidth: 10,
+    islandWidth: 2,
+    lanesPerRoad: 3,
+    fov: 90,
+    fovSpeedUp: 150,
+    speedUp: 2,
+    carLightsFade: 0.4,
+    totalSideLightSticks: 20,
+    lightPairsPerRoadWay: 40,
+    shoulderLinesWidthPercentage: 0.05,
+    brokenLinesWidthPercentage: 0.1,
+    brokenLinesLengthPercentage: 0.5,
+    lightStickWidth: [0.12, 0.5],
+    lightStickHeight: [1.3, 1.7],
+    movingAwaySpeed: [60, 80],
+    movingCloserSpeed: [-120, -160],
+    carLightsLength: [12, 80],
+    carLightsRadius: [0.05, 0.14],
+    carWidthPercentage: [0.3, 0.5],
+    carShiftX: [-0.8, 0.8],
+    carFloorSeparation: [0, 5],
+    colors: {
+        roadColor: 0x080808,
+        islandColor: 0x0a0a0a,
+        background: 0x000000,
+        shoulderLines: 0x00f5d4,
+        brokenLines: 0x00f5d4,
+        leftCars: [0x00f5d4, 0x00ffd8, 0x00b4ab],
+        rightCars: [0x00f5d4, 0x028090, 0x00ffd8],
+        sticks: 0x00f5d4
+    }
+};
+
+const NAV_ITEMS = [
+    { label: 'Features', href: '/#client-services', icon: Zap },
+    { label: 'Use Cases', href: '/#use-cases', icon: Box },
+    { label: 'Pricing', href: '/pricing', icon: Check },
+    { label: 'Docs', href: 'https://docs.ub.bitbros.in', icon: Terminal, external: true }
+];
+
 function LandingPage() {
-    const { isAuthenticated, login } = useAuth();
+    const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isNavVisible, setIsNavVisible] = useState(true);
-    const lastScrollY = useRef(0);
     const [scrolled, setScrolled] = useState(false);
 
+    useEffect(() => {
+        if (location.hash) {
+            const id = location.hash.substring(1);
+            const element = document.getElementById(id);
+            if (element) {
+                const timer = setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [location.pathname, location.hash]);
+
     const [openFaqIndex, setOpenFaqIndex] = useState(null);
-    const [authMode, setAuthMode] = useState('login');
-    const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false);
-    const [authLoading, setAuthLoading] = useState(false);
     const [hoveredTech, setHoveredTech] = useState(null);
 
     const [studioStep, setStudioStep] = useState(6);
@@ -578,17 +659,7 @@ function LandingPage() {
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
-            const delta = currentScrollY - lastScrollY.current;
             setScrolled(currentScrollY > 20);
-
-            // Show quickly on even slight upward scroll; hide only on clear downward movement.
-            if (currentScrollY < 80 || delta < -2) {
-                setIsNavVisible(true);
-            } else if (delta > 10 && currentScrollY > 140) {
-                setIsNavVisible(false);
-            }
-
-            lastScrollY.current = currentScrollY;
         };
 
         window.addEventListener('scroll', handleScroll);
@@ -602,38 +673,7 @@ function LandingPage() {
         setOpenFaqIndex(openFaqIndex === index ? null : index);
     };
 
-    const handleAuthChange = (e) => {
-        const { name, value } = e.target;
-        setAuthForm(prev => ({ ...prev, [name]: value }));
-    };
 
-    const handleAuthSubmit = async (e) => {
-        e.preventDefault();
-        setAuthLoading(true);
-        try {
-            if (authMode === 'signup') {
-                const resp = await api.post('/api/auth/register', authForm);
-                if (resp.data?.success) {
-                    navigate('/login');
-                }
-            } else {
-                const resp = await api.post('/api/auth/login', { email: authForm.email, password: authForm.password });
-                if (resp.data?.success) {
-                    login(resp.data.user);
-                    navigate('/dashboard');
-                }
-            }
-        } catch (err) {
-            console.error('Auth error:', err);
-        } finally {
-            setAuthLoading(false);
-        }
-    };
-
-    const handleGithubSignIn = () => {
-        setAuthLoading(true);
-        window.location.href = `${import.meta.env.VITE_PUBLIC_API_URL}/api/userAuth/github/start?x-api-key=${import.meta.env.VITE_PUBLIC_API_KEY}`;
-    };
 
     return (
         <div className="landing-page">
@@ -670,29 +710,48 @@ function LandingPage() {
                 )}
             </div>
 
-            <nav className={`nav-glass ${!isNavVisible ? 'nav-hidden' : ''} ${scrolled ? 'nav-scrolled' : ''}`}>
+            <nav className={`nav-glass ${scrolled ? 'nav-scrolled' : ''}`}>
                 <div className="nav-container">
                     <div className="nav-logo">
                         <img src="https://cdn.jsdelivr.net/gh/yash-pouranik/urBackend/apps/web-dashboard/public/LOGO_SQ.png" alt="urBackend" style={{ height: '40px', width: 'auto' }} />
                     </div>
 
                     <div className="nav-links">
-                        <a href="#features" className="nav-link">
-                            <Zap size={16} />
-                            <span>Features</span>
-                        </a>
-                        <a href="#use-cases" className="nav-link">
-                            <Box size={16} />
-                            <span>Use Cases</span>
-                        </a>
-                        <Link to="/pricing" className="nav-link">
-                            <Check size={16} />
-                            <span>Pricing</span>
-                        </Link>
-                        <a href="https://docs.ub.bitbros.in" target="_blank" rel="noopener noreferrer" className="nav-link">
-                            <Terminal size={16} />
-                            <span>Docs</span>
-                        </a>
+                        {NAV_ITEMS.map((item, index) => {
+                            const isInternal = item.href.startsWith('/') && !item.href.startsWith('//') && !item.href.includes('#');
+                            const Icon = item.icon;
+                            let isActive = false;
+                            if (item.href.includes('#')) {
+                                const parts = item.href.split('#');
+                                const path = parts[0] || '/';
+                                const hash = parts[1];
+                                isActive = location.pathname === path && location.hash === '#' + hash;
+                            } else {
+                                isActive = item.href === location.pathname;
+                            }
+
+                            return isInternal ? (
+                                <Link 
+                                    key={index} 
+                                    to={item.href} 
+                                    className={`nav-link ${isActive ? 'active' : ''}`}
+                                >
+                                    {Icon && <Icon size={14} />}
+                                    <span>{item.label}</span>
+                                </Link>
+                            ) : (
+                                <a 
+                                    key={index} 
+                                    href={item.href} 
+                                    className={`nav-link ${isActive ? 'active' : ''}`}
+                                    target={item.external ? '_blank' : undefined} 
+                                    rel={item.external ? 'noopener noreferrer' : undefined}
+                                >
+                                    {Icon && <Icon size={14} />}
+                                    <span>{item.label}</span>
+                                </a>
+                            );
+                        })}
                     </div>
 
                     <div className="nav-actions">
@@ -718,6 +777,7 @@ function LandingPage() {
             </nav>
 
             <div className="hero-section">
+                <Hyperspeed effectOptions={HYPERSPEED_OPTIONS} />
                 <div className="hero-glow"></div>
 
                 <div className="hero-split">
@@ -749,145 +809,23 @@ function LandingPage() {
                         </Motion.p>
 
                         <Motion.div 
-                            className="hero-flow"
-                            initial={{ opacity: 0, y: 30 }}
+                            className="hero-ctas"
+                            initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.7 }}
+                            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+                            style={{ marginBottom: '2.5rem' }}
                         >
-                            <div className="hf-step">
-                                <div className="hf-icon"><Database size={28} /></div>
-                                <div className="hf-label">Your MongoDB</div>
-                                <div className="hf-desc">Atlas or self-hosted</div>
-                            </div>
-                            <div className="hf-connector">
-                                <div className="hf-dot"></div>
-                            </div>
-                            <div className="hf-step hf-highlight">
-                                <div className="hf-icon"><Zap size={28} /></div>
-                                <div className="hf-label">urBackend</div>
-                                <div className="hf-desc">BaaS engine</div>
-                            </div>
-                            <div className="hf-connector">
-                                <div className="hf-dot" style={{ animationDelay: '0.8s' }}></div>
-                            </div>
-                            <div className="hf-step">
-                                <div className="hf-icon"><Terminal size={28} /></div>
-                                <div className="hf-label">Instant APIs</div>
-                                <div className="hf-desc">Auth, Storage, Email</div>
-                            </div>
+                            <Link to="/signup" className="btn-hero-primary">
+                                <span>Get Started Free</span>
+                                <ArrowRight size={18} strokeWidth={2.5} />
+                            </Link>
+                            <Link to="/login" className="btn-hero-secondary">
+                                <Terminal size={18} strokeWidth={2} />
+                                <span>Go to Console</span>
+                            </Link>
                         </Motion.div>
+
                     </div>
-
-                    <Motion.div 
-                        className="hero-split-right"
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8, delay: 0.5 }}
-                    >
-                        <div className="hero-auth-card">
-                            <div className="hero-auth-tabs">
-                                <button
-                                    className={`hero-auth-tab ${authMode === 'login' ? 'active' : ''}`}
-                                    onClick={() => { setAuthMode('login'); setShowPassword(false); }}
-                                >
-                                    Sign In
-                                </button>
-                                <button
-                                    className={`hero-auth-tab ${authMode === 'signup' ? 'active' : ''}`}
-                                    onClick={() => { setAuthMode('signup'); setShowPassword(false); }}
-                                >
-                                    Sign Up
-                                </button>
-                            </div>
-
-                            <form className="hero-auth-form" onSubmit={handleAuthSubmit}>
-                                <button
-                                    type="button"
-                                    className="hero-auth-github"
-                                    onClick={handleGithubSignIn}
-                                    disabled={authLoading}
-                                >
-                                    <Github size={17} />
-                                    Continue with GitHub
-                                </button>
-
-                                <div className="hero-auth-divider">
-                                    <span>or</span>
-                                </div>
-
-                                {authMode === 'signup' && (
-                                    <div className="hero-auth-field">
-                                        <label>Full name</label>
-                                        <div className="hero-auth-input-wrap">
-                                            <UserRound size={16} />
-                                            <input
-                                                type="text"
-                                                name="name"
-                                                placeholder="Jane Doe"
-                                                value={authForm.name}
-                                                onChange={handleAuthChange}
-                                                autoComplete="name"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="hero-auth-field">
-                                    <label>Email address</label>
-                                    <div className="hero-auth-input-wrap">
-                                        <Mail size={16} />
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            placeholder="name@company.com"
-                                            value={authForm.email}
-                                            onChange={handleAuthChange}
-                                            autoComplete="email"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="hero-auth-field">
-                                    <label>Password</label>
-                                    <div className="hero-auth-input-wrap">
-                                        <Lock size={16} />
-                                        <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            name="password"
-                                            placeholder={authMode === 'signup' ? 'Create a strong password' : 'Enter your password'}
-                                            value={authForm.password}
-                                            onChange={handleAuthChange}
-                                            autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                                            minLength={6}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            className="hero-auth-toggle"
-                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                            onClick={() => setShowPassword(prev => !prev)}
-                                        >
-                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {authMode === 'login' && (
-                                    <Link to="/forgot-password" state={{ email: authForm.email }} className="hero-auth-forgot">
-                                        Forgot password?
-                                    </Link>
-                                )}
-
-                                <button type="submit" className="hero-auth-submit" disabled={authLoading}>
-                                    {authLoading
-                                        ? (authMode === 'login' ? 'Signing in...' : 'Creating account...')
-                                        : (authMode === 'login' ? 'Sign in' : 'Create account')
-                                    }
-                                </button>
-                            </form>
-                        </div>
-                    </Motion.div>
                 </div>
             </div>
 
@@ -909,37 +847,19 @@ function LandingPage() {
                         </p>
                     </Motion.div>
 
-                    <div className="services-grid">
-                        {APP_SERVICES.map((service, index) => {
-                            const IconComponent = service.icon;
-                            return (
-                                <Motion.div 
-                                    key={service.id} 
-                                    className="service-card"
-                                    style={{ '--accent-color': service.color, '--accent-glow': `${service.color}33` }}
-                                    initial={{ opacity: 0, y: 40 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                                >
-                                    <div className="service-card-glow"></div>
-                                    <div className="service-card-header">
-                                        <div className="service-icon-wrap">
-                                            <IconComponent size={22} strokeWidth={1.5} />
-                                        </div>
-                                        <span className="service-badge">{service.badge}</span>
-                                    </div>
-                                    <div className="service-card-body">
-                                        <h3 className="service-card-title">{service.title}</h3>
-                                        <p className="service-card-desc">{service.desc}</p>
-                                    </div>
-                                    <div className="service-card-visual-container">
-                                        {service.visual}
-                                    </div>
-                                </Motion.div>
-                            );
-                        })}
-                    </div>
+                    <MagicBento
+                        cards={APP_SERVICES}
+                        textAutoHide={true}
+                        enableStars={false}
+                        enableSpotlight={true}
+                        enableBorderGlow={true}
+                        enableTilt={false}
+                        enableMagnetism={true}
+                        clickEffect={true}
+                        spotlightRadius={300}
+                        particleCount={12}
+                        glowColor="0, 245, 212"
+                    />
                 </div>
             </div>
 

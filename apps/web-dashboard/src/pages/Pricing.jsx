@@ -1,7 +1,19 @@
-import { Link } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import {
+  Check,
+  Zap,
+  Box,
+  Terminal,
+  ArrowRight,
+  Activity,
+  Menu,
+  X
+} from 'lucide-react';
 import Footer from '../components/Layout/Footer';
 import './Pricing.css';
+import './LandingPage/style.css';
 
 const FREE_FEATURES = [
   '1 Project',
@@ -30,21 +42,116 @@ const PRO_FEATURES = [
   'Priority support',
 ];
 
+const NAV_ITEMS = [
+  { label: 'Features', href: '/#client-services', icon: Zap },
+  { label: 'Use Cases', href: '/#use-cases', icon: Box },
+  { label: 'Pricing', href: '/pricing', icon: Check },
+  { label: 'Docs', href: 'https://docs.ub.bitbros.in', icon: Terminal, external: true }
+];
+
 export default function Pricing() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="pricing-page">
-      <header className="pricing-header">
-        <div className="pricing-header-inner">
-          <Link to="/" className="pricing-logo">
-            urBackend
-          </Link>
-          <div className="pricing-header-links">
-            <Link to="/docs" className="pricing-link">Docs</Link>
-            <Link to="/login" className="pricing-link">Log in</Link>
-            <Link to="/signup" className="pricing-cta">Get Started</Link>
+      <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}>
+        <a href="/#client-services" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Features</a>
+        <a href="/#use-cases" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Use Cases</a>
+        <Link to="/pricing" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Pricing</Link>
+        <a href="https://docs.ub.bitbros.in" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Docs</a>
+        <div style={{ height: '1px', width: '60px', background: '#333', margin: '10px 0' }}></div>
+        {isAuthenticated ? (
+          <button onClick={() => navigate('/dashboard')} className="btn btn-primary" style={{ fontWeight: 600, width: '200px', padding: '12px' }}>
+            Go to Console
+          </button>
+        ) : (
+          <>
+            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.2rem', fontWeight: 500, color: '#aaa', textDecoration: 'none' }}>Log in</Link>
+            <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)} className="btn btn-primary" style={{ fontWeight: 600, padding: '12px 30px', width: '200px', textAlign: 'center' }}>Start for Free</Link>
+          </>
+        )}
+      </div>
+
+      <nav className={`nav-glass ${scrolled ? 'nav-scrolled' : ''}`}>
+        <div className="nav-container">
+          <div className="nav-logo">
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <img src="https://cdn.jsdelivr.net/gh/yash-pouranik/urBackend/apps/web-dashboard/public/LOGO_SQ.png" alt="urBackend" style={{ height: '32px', width: 'auto' }} />
+              <span className="nav-logo-text">urBackend</span>
+            </Link>
+          </div>
+
+          <div className="nav-links">
+            {NAV_ITEMS.map((item, index) => {
+              const isInternal = item.href.startsWith('/') && !item.href.startsWith('//') && !item.href.includes('#');
+              const Icon = item.icon;
+              let isActive = false;
+              if (item.href.includes('#')) {
+                const parts = item.href.split('#');
+                const path = parts[0] || '/';
+                const hash = parts[1];
+                isActive = location.pathname === path && location.hash === '#' + hash;
+              } else {
+                isActive = item.href === location.pathname;
+              }
+
+              return isInternal ? (
+                <Link 
+                  key={index} 
+                  to={item.href} 
+                  className={`nav-link ${isActive ? 'active' : ''}`}
+                >
+                  {Icon && <Icon size={14} />}
+                  <span>{item.label}</span>
+                </Link>
+              ) : (
+                <a 
+                  key={index} 
+                  href={item.href} 
+                  className={`nav-link ${isActive ? 'active' : ''}`}
+                  target={item.external ? '_blank' : undefined} 
+                  rel={item.external ? 'noopener noreferrer' : undefined}
+                >
+                  {Icon && <Icon size={14} />}
+                  <span>{item.label}</span>
+                </a>
+              );
+            })}
+          </div>
+
+          <div className="nav-actions">
+            {isAuthenticated ? (
+              <button onClick={() => navigate('/dashboard')} className="nav-btn-primary">
+                <Activity size={16} />
+                <span>Console</span>
+              </button>
+            ) : (
+              <>
+                <Link to="/login" className="nav-btn-ghost">Log in</Link>
+                <Link to="/signup" className="nav-btn-primary">
+                  <span>Get Started</span>
+                  <ArrowRight size={16} />
+                </Link>
+              </>
+            )}
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X /> : <Menu />}
+            </button>
           </div>
         </div>
-      </header>
+      </nav>
 
       <main className="pricing-main">
         <div className="pricing-hero">
