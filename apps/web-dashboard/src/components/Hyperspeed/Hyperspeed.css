@@ -10,7 +10,7 @@
   opacity: 0.45; /* Soften the light beams for better foreground text readability */
 }
 
-canvas {
+#lights canvas {
   width: 100%;
   height: 100%;
   display: block;

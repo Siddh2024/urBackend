@@ -66,20 +66,20 @@ export default function Pricing() {
 
   return (
     <div className="pricing-page">
-      <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}>
-        <a href="/#client-services" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Features</a>
-        <a href="/#use-cases" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Use Cases</a>
-        <Link to="/pricing" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Pricing</Link>
-        <a href="https://docs.ub.bitbros.in" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', textDecoration: 'none' }}>Docs</a>
-        <div style={{ height: '1px', width: '60px', background: '#333', margin: '10px 0' }}></div>
+      <div id="pricing-mobile-menu" className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}>
+        <Link to="/#client-services" className="mobile-menu-link" onClick={() => setIsMobileMenuOpen(false)}>Features</Link>
+        <Link to="/#use-cases" className="mobile-menu-link" onClick={() => setIsMobileMenuOpen(false)}>Use Cases</Link>
+        <Link to="/pricing" className="mobile-menu-link" onClick={() => setIsMobileMenuOpen(false)}>Pricing</Link>
+        <a href="https://docs.ub.bitbros.in" target="_blank" rel="noopener noreferrer" className="mobile-menu-link" onClick={() => setIsMobileMenuOpen(false)}>Docs</a>
+        <div className="mobile-menu-divider"></div>
         {isAuthenticated ? (
-          <button onClick={() => navigate('/dashboard')} className="btn btn-primary" style={{ fontWeight: 600, width: '200px', padding: '12px' }}>
+          <button onClick={() => navigate('/dashboard')} className="btn btn-primary mobile-menu-action">
             Go to Console
           </button>
         ) : (
           <>
-            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1.2rem', fontWeight: 500, color: '#aaa', textDecoration: 'none' }}>Log in</Link>
-            <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)} className="btn btn-primary" style={{ fontWeight: 600, padding: '12px 30px', width: '200px', textAlign: 'center' }}>Start for Free</Link>
+            <Link to="/login" className="mobile-menu-sub-link" onClick={() => setIsMobileMenuOpen(false)}>Log in</Link>
+            <Link to="/signup" className="btn btn-primary mobile-menu-action" onClick={() => setIsMobileMenuOpen(false)}>Start for Free</Link>
           </>
         )}
       </div>
@@ -146,7 +146,13 @@ export default function Pricing() {
                 </Link>
               </>
             )}
-            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="pricing-mobile-menu"
+            >
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
           </div>

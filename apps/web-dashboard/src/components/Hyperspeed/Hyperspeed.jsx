@@ -1167,9 +1167,15 @@ const Hyperspeed = ({ effectOptions = DEFAULT_EFFECT_OPTIONS }) => {
 
     const myApp = new App(container, options);
     appRef.current = myApp;
-    myApp.loadAssets().then(myApp.init);
+    let cancelled = false;
+    myApp.loadAssets().then(() => {
+      if (!cancelled && !myApp.disposed) {
+        myApp.init();
+      }
+    });
 
     return () => {
+      cancelled = true;
       if (appRef.current) {
         appRef.current.dispose();
         appRef.current = null;

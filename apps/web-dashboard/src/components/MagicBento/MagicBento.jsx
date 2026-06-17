@@ -475,16 +475,14 @@ const useMobileDetection = () => {
 const MagicBento = ({
   cards,
   textAutoHide = true,
-  // enableStars = true,
   enableSpotlight = true,
-  // enableBorderGlow = true,
   disableAnimations = false,
   spotlightRadius = DEFAULT_SPOTLIGHT_RADIUS,
-  // particleCount = DEFAULT_PARTICLE_COUNT,
-  // enableTilt = false,
+  particleCount = DEFAULT_PARTICLE_COUNT,
+  enableTilt = false,
   glowColor = DEFAULT_GLOW_COLOR,
-  // clickEffect = true,
-  // enableMagnetism = true
+  clickEffect = true,
+  enableMagnetism = true
 }) => {
   const gridRef = useRef(null);
   const isMobile = useMobileDetection();
@@ -512,32 +510,42 @@ const MagicBento = ({
           const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''}`;
 
           return (
-            <BorderGlow
+            <ParticleCard
               key={index}
               className={baseClassName}
-              edgeSensitivity={30}
-              glowColor="172 100 48"
-              backgroundColor="rgba(255, 255, 255, 0.02)"
-              borderRadius={16}
-              glowRadius={40}
-              glowIntensity={1.0}
-              coneSpread={25}
-              animated={false}
-              colors={['#00f5d4', '#00ffd8', '#00b4ab']}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={particleCount}
+              glowColor={glowColor}
+              enableTilt={enableTilt}
+              clickEffect={clickEffect}
+              enableMagnetism={enableMagnetism}
             >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">{label}</div>
-              </div>
-              {visual && (
-                <div className="magic-bento-card__visual">
-                  {visual}
+              <BorderGlow
+                className=""
+                edgeSensitivity={30}
+                glowColor="172 100 48"
+                backgroundColor="rgba(255, 255, 255, 0.02)"
+                borderRadius={16}
+                glowRadius={40}
+                glowIntensity={1.0}
+                coneSpread={25}
+                animated={false}
+                colors={['#00f5d4', '#00ffd8', '#00b4ab']}
+              >
+                <div className="magic-bento-card__header">
+                  <div className="magic-bento-card__label">{label}</div>
                 </div>
-              )}
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{title}</h2>
-                <p className="magic-bento-card__description">{description}</p>
-              </div>
-            </BorderGlow>
+                {visual && (
+                  <div className="magic-bento-card__visual">
+                    {visual}
+                  </div>
+                )}
+                <div className="magic-bento-card__content">
+                  <h2 className="magic-bento-card__title">{title}</h2>
+                  <p className="magic-bento-card__description">{description}</p>
+                </div>
+              </BorderGlow>
+            </ParticleCard>
           );
         })}
       </BentoCardGrid>
